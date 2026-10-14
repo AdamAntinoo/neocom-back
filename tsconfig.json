@@ -18,6 +18,12 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": ["vitest/globals", "node"]
+    "types": ["vitest/globals", "node"],
+    "paths": {
+      "@App/*": ["./src/application/*"],
+      "@Domain/*": ["./src/domain/*"],
+      "@Infra/*": ["./src/infrastructure/*"],
+      "@Generated/*": ["./src/generated/*"]
+    }
   }
 }

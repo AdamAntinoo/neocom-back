@@ -1,0 +1,87 @@
+{
+  "info": {
+    "name": "NEOCOM Pilot",
+    "description": "Manual checks for GET /v1/pilots/{pilotId}. A non-empty Authorization header marks the caller as logged in. Without it, the private pilot section is omitted.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "pilotId",
+      "value": "93813310"
+    },
+    {
+      "key": "authorization",
+      "value": "present"
+    }
+  ],
+  "item": [
+    {
+      "name": "Get pilot, not logged in",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+        "description": "No Authorization header. The response is a PilotV1Dto for the pilot identifier and does not include the private section."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('returns the requested pilot id', function () {",
+              "    pm.expect(body.pilotId).to.eql(Number(pm.variables.get('pilotId')));",
+              "});",
+              "pm.test('omits the private section', function () {",
+              "    pm.expect(body).to.not.have.property('totalSkillpoints');",
+              "    pm.expect(body).to.not.have.property('walletBalance');",
+              "    pm.expect(body).to.not.have.property('currentShipName');",
+              "    pm.expect(body).to.not.have.property('currentShipTypeName');",
+              "    pm.expect(body).to.not.have.property('lastKnownLocation');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get pilot, logged in",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authorization}}"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+        "description": "Any non-empty Authorization value marks the caller as logged in. The header is not validated as a token. Private fields are included only when the pilot source has them."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('returns the requested pilot id', function () {",
+              "    pm.expect(body.pilotId).to.eql(Number(pm.variables.get('pilotId')));",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

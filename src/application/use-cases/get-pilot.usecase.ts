@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { PilotDto } from '../../infrastructure/generated/pilot/model/pilot-dto.js';
-import type { PilotV2 } from '../../domain/pilot/pilot.js';
-import { PILOT_SOURCE, type PilotSource } from '../ports/pilot-source.port.js';
+import type { PilotV1Dto } from '@Generated/pilot/model/pilot-v1-dto.js';
+import type { PilotV2 } from '@Domain/pilot/pilot.js';
+import { PILOT_SOURCE, type PilotSource } from '@App/ports/pilot-source.port.js';
 
 const PRIVATE_FIELDS = [
   'totalSkillpoints',
@@ -9,20 +9,20 @@ const PRIVATE_FIELDS = [
   'currentShipName',
   'currentShipTypeName',
   'lastKnownLocation',
-] as const satisfies readonly (keyof PilotDto)[];
+] as const satisfies readonly (keyof PilotV1Dto)[];
 
 @Injectable()
 export class GetPilotUseCase {
   constructor(@Inject(PILOT_SOURCE) private readonly pilots: PilotSource) {}
 
-  async execute(pilotId: number, loggedIn: boolean): Promise<PilotDto> {
+  async execute(pilotId: number, loggedIn: boolean): Promise<PilotV1Dto> {
     const pilot = await this.pilots.findById(pilotId);
-    return toPilotDto(pilot, loggedIn);
+    return toPilotV1Dto(pilot, loggedIn);
   }
 }
 
-function toPilotDto(pilot: PilotV2, loggedIn: boolean): PilotDto {
-  const dto: PilotDto = {
+function toPilotV1Dto(pilot: PilotV2, loggedIn: boolean): PilotV1Dto {
+  const dto: PilotV1Dto = {
     pilotId: pilot.pilotId,
     name: pilot.name,
     corporation: pilot.corporation,

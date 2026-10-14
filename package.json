@@ -6,6 +6,12 @@
   "private": true,
   "license": "GPL-3.0-only",
   "type": "module",
+  "imports": {
+    "@App/*": "./dist/application/*",
+    "@Domain/*": "./dist/domain/*",
+    "@Infra/*": "./dist/infrastructure/*",
+    "@Generated/*": "./dist/generated/*"
+  },
   "scripts": {
     "build": "nest build",
     "deploy": "nest deploy",
@@ -20,13 +26,16 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "openapi:pilot": "openapi-generator generate -i openapi/pilot.yaml -g typescript-nestjs -o src/infrastructure/generated/pilot --additional-properties=fileNaming=kebab-case,withInterfaces=true,supportsES6=true,modelPropertyNaming=original,npmName=neocom-back-pilot-api,npmVersion=0.0.1 && node scripts/fix-generated-pilot-imports.mjs"
+    "version:sync": "npm pkg set version=$(gitversion /nocache /showvariable MajorMinorPatch)",
+    "openapi:pilot": "openapi-generator generate -i tools/openapi/pilot-service-v0.1.0.yaml -g typescript-nestjs -o src/generated/pilot --additional-properties=fileNaming=kebab-case,withInterfaces=true,supportsES6=true,modelPropertyNaming=original,npmName=neocom-back-pilot-api,npmVersion=0.0.1 && node scripts/fix-generated-pilot-imports.mjs"
   },
   "dependencies": {
     "@lgriffin/esi.ts": "^12.0.0",
     "@nestjs/common": "^12.0.1",
+    "@nestjs/config": "^12.0.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-express": "^12.0.1",
+    "cookie-parser": "^1.4.7",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -35,6 +44,7 @@
     "@nestjs/mau": "^0.2.6",
     "@nestjs/schematics": "^12.0.0",
     "@nestjs/testing": "^12.0.1",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
