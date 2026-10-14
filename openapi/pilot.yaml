@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: NEOCOM Pilot API
+  version: 0.0.1
+  description: Pilot endpoint. The pilot identifier is the path parameter. Private fields are omitted when the caller is not logged in.
+paths:
+  /pilots/{pilotId}:
+    get:
+      operationId: getPilot
+      summary: Pilot
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          description: Pilot identifier
+          schema:
+            type: integer
+            format: int32
+      responses:
+        "200":
+          description: PilotDto, a JSON view of the Pilot model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PilotDto"
+components:
+  schemas:
+    PilotDto:
+      type: object
+      required:
+        - pilotId
+      properties:
+        pilotId:
+          type: number
+        name:
+          type: string
+        corporation:
+          $ref: "#/components/schemas/PublicCorporationV1"
+        birthday:
+          type: string
+        description:
+          type: string
+        gender:
+          type: string
+        securityStatus:
+          type: number
+        url4Icon:
+          type: string
+        raceData:
+          $ref: "#/components/schemas/UniverseRaceData"
+        ancestryData:
+          $ref: "#/components/schemas/UniverseAncestryData"
+        bloodlineData:
+          $ref: "#/components/schemas/UniverseBloodlineData"
+        totalSkillpoints:
+          type: number
+        walletBalance:
+          type: number
+        currentShipName:
+          type: string
+        currentShipTypeName:
+          type: string
+        lastKnownLocation:
+          $ref: "#/components/schemas/SpaceLocationV1"
+    PublicCorporationV1:
+      type: object
+      properties:
+        corporationId:
+          type: number
+        name:
+          type: string
+        ceoid:
+          type: number
+        creatorId:
+          type: number
+        dateFounded:
+          type: string
+        description:
+          type: string
+        homeStation:
+          $ref: "#/components/schemas/Station"
+        memberCount:
+          type: number
+        shares:
+          type: number
+        taxRate:
+          type: number
+        ticker:
+          type: string
+        url4Icon:
+          type: string
+        allianceId:
+          type: number
+        alliance:
+          $ref: "#/components/schemas/AllianceV1"
+    Station:
+      type: object
+      description: The Station model declares no fields.
+    AllianceV1:
+      type: object
+      properties:
+        allianceId:
+          type: number
+          default: -5
+        name:
+          type: string
+          default: "-NAME-"
+        ticker:
+          type: string
+          default: TICK
+        url4Icon:
+          type: string
+    UniverseRaceData:
+      type: object
+      properties:
+        allianceId:
+          type: number
+        description:
+          type: string
+        name:
+          type: string
+        raceId:
+          type: number
+    UniverseAncestryData:
+      type: object
+      properties:
+        name:
+          type: string
+    UniverseBloodlineData:
+      type: object
+      properties:
+        name:
+          type: string
+    SpaceLocationV1:
+      type: object
+      description: The SpaceLocationV1 model declares no fields.
