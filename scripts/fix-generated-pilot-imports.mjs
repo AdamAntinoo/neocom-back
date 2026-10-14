@@ -1,7 +1,7 @@
-import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-const root = 'src/infrastructure/generated/pilot'
+const root = 'src/generated/pilot'
 
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true })
@@ -13,6 +13,17 @@ async function walk(dir) {
   }
   return files
 }
+
+const generatedPackage = path.join(root, 'package.json')
+const packageJson = JSON.parse(await readFile(generatedPackage, 'utf8'))
+packageJson.type = 'module'
+await writeFile(generatedPackage, `${JSON.stringify(packageJson, null, 2)}\n`)
+await rm(path.join(root, 'tsconfig.json'), { force: true })
+await rm(path.join(root, 'tsconfig.build.json'), { force: true })
+await rm(path.join(root, 'api'), { recursive: true, force: true })
+await rm(path.join(root, 'api.module.ts'), { force: true })
+await rm(path.join(root, 'git_push.sh'), { force: true })
+await writeFile(path.join(root, 'index.ts'), "export * from './model/models.js';\n")
 
 for (const file of await walk(root)) {
   const text = await readFile(file, 'utf8')

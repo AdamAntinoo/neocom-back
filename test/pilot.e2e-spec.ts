@@ -3,8 +3,8 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
-import { PILOT_SOURCE } from './../src/application/ports/pilot-source.port.js';
-import type { PilotV2 } from './../src/domain/pilot/pilot.js';
+import { PILOT_SOURCE } from '@App/ports/pilot-source.port.js';
+import type { PilotV2 } from '@Domain/pilot/pilot.js';
 
 const pilot: PilotV2 = {
   pilotId: 93813310,
@@ -33,9 +33,26 @@ describe('Pilot endpoint (e2e)', () => {
     await app.init();
   });
 
-  it('GET /pilots/:pilotId returns the PilotDto without the private section when not logged in', () => {
+  it('GET /v1/pilots/:pilotId returns StandardError when pilotId is not an integer', () => {
     return request(app.getHttpServer())
-      .get('/pilots/93813310')
+      .get('/v1/pilots/not-a-number')
+      .expect(400)
+      .expect((response) => {
+        expect(response.body.errors).toEqual([
+          {
+            code: 'INVALID_REQUEST',
+            description: 'pilotId must be an integer.',
+            field: 'pilotId',
+            container: 'path',
+            value: 'not-a-number',
+          },
+        ]);
+      });
+  });
+
+  it('GET /v1/pilots/:pilotId returns the PilotV1Dto without the private section when not logged in', () => {
+    return request(app.getHttpServer())
+      .get('/v1/pilots/93813310')
       .expect(200)
       .expect((response) => {
         expect(response.body.pilotId).toBe(93813310);
@@ -48,9 +65,9 @@ describe('Pilot endpoint (e2e)', () => {
       });
   });
 
-  it('GET /pilots/:pilotId includes the private section when an authorization header is present', () => {
+  it('GET /v1/pilots/:pilotId includes the private section when an authorization header is present', () => {
     return request(app.getHttpServer())
-      .get('/pilots/93813310')
+      .get('/v1/pilots/93813310')
       .set('Authorization', 'present')
       .expect(200)
       .expect((response) => {

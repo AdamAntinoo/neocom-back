@@ -1,6 +1,6 @@
 import { GetPilotUseCase } from './get-pilot.usecase.js';
-import type { PilotSource } from '../ports/pilot-source.port.js';
-import type { PilotV2 } from '../../domain/pilot/pilot.js';
+import type { PilotSource } from '@App/ports/pilot-source.port.js';
+import type { PilotV2 } from '@Domain/pilot/pilot.js';
 
 const pilot: PilotV2 = {
   pilotId: 93813310,
@@ -18,7 +18,7 @@ describe('GetPilotUseCase', () => {
   };
   const useCase = new GetPilotUseCase(source);
 
-  it('returns a PilotDto for the pilot identifier and omits the private section when not logged in', async () => {
+  it('returns a PilotV1Dto for the pilot identifier and omits the private section when not logged in', async () => {
     const dto = await useCase.execute(93813310, false);
     expect(dto.pilotId).toBe(93813310);
     expect(dto.name).toBe('Perico Tuerto');

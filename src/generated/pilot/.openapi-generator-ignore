@@ -21,3 +21,8 @@
 #docs/*.md
 # Then explicitly reverse the ignore rule for a single file:
 #!docs/README.md
+
+# The Nest client is not used. Controllers implement a handwritten API interface.
+api/
+api.module.ts
+git_push.sh

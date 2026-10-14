@@ -1,4 +1,4 @@
-import type { PilotV2 } from '../../domain/pilot/pilot.js';
+import type { PilotV2 } from '@Domain/pilot/pilot.js';
 
 export const PILOT_SOURCE = Symbol('PILOT_SOURCE');
 
