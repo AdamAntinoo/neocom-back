@@ -1,0 +1,28 @@
+# Continuous deployment. No version-source tag yet.
+# package.json starts at 0.0.1. Later versions count up from the first vX.Y.Z tag.
+# On main, each commit increments the minor component.
+# version:sync writes MajorMinorPatch only. Do not write FullSemVer into package.json.
+next-version: 0.0.1
+assembly-informational-format: '{FullSemVer}'
+mode: ContinuousDeployment
+branches:
+  main:
+    regex: ^main$
+    mode: ContinuousDeployment
+    increment: Minor
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: false
+  pull-request:
+    mode: ContinuousDelivery
+    tag: PullRequest
+    increment: Patch
+    prevent-increment-of-merged-branch-version: false
+    tag-number-pattern: '[/-](?<number>\d+)[-/]'
+    track-merge-target: false
+    regex: (pull|pull\-requests|pr|[0-9]+)[/-]
+    tracks-release-branches: false
+    is-release-branch: false
+ignore:
+  sha: []
+merge-message-formats: {}
+assembly-file-versioning-format: '{Major}.{Minor}.{Patch}-{CommitsSinceVersionSource}'

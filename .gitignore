@@ -1,8 +1,12 @@
+.DS_Store
+
 # Nestjs specific
 /dist
 /node_modules
 /build
 /tmp
+/coverage
+*.tsbuildinfo
 
 # Logs
 logs
@@ -22,3 +26,11 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+graphify-out/
+src/generated/pilot/.openapi-generator/
+src/generated/pilot/configuration.ts
+src/generated/pilot/index.ts
+src/generated/pilot/package.json
+src/generated/pilot/README.md
+src/generated/pilot/tslint.json
+src/generated/pilot/variables.ts

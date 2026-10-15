@@ -1,0 +1,360 @@
+openapi: 3.0.3
+info:
+  title: NEOCOM Pilot API
+  version: 0.1.0
+  description: |
+    # Pilot
+
+    `GET /v1/pilots/{pilotId}` returns `PilotV1Dto`.
+
+    The controller returns that DTO. Failures are thrown and written by an upper layer as `NeocomError`.
+
+    Private fields are **omitted** when the caller is not logged in:
+
+    - `totalSkillpoints`
+    - `walletBalance`
+    - `currentShipName`
+    - `currentShipTypeName`
+    - `lastKnownLocation`
+
+    **Documented HTTP errors:** **400**, **404**, **500**.
+
+    ## Changelog
+
+    ### 2026-10-14 — NeocomError responses
+
+    - Success stays `PilotV1Dto`.
+    - **400** — `pilotId` is not an integer (`INVALID_REQUEST`).
+    - **404** — no pilot for that identifier (`PILOT_NOT_FOUND`).
+    - **500** — the pilot source is not available (`INTERNAL_SERVER_ERROR`).
+    - Error bodies use `NeocomError`.
+
+    ### 2026-10-14 — Schema names
+
+    Every interchange schema ends with `V1Dto`:
+
+    - `PilotDto` is `PilotV1Dto`
+    - `PublicCorporationV1` is `PublicCorporationV1Dto`
+    - `Station` is `StationV1Dto`
+    - `AllianceV1` is `AllianceV1Dto`
+    - `UniverseRaceData` is `UniverseRaceDataV1Dto`
+    - `UniverseAncestryData` is `UniverseAncestryDataV1Dto`
+    - `UniverseBloodlineData` is `UniverseBloodlineDataV1Dto`
+    - `SpaceLocationV1` is `SpaceLocationV1Dto`
+
+    ### 2026-10-14 — Version prefix
+
+    - Every endpoint path starts with `v1`.
+    - Pilot is `GET /v1/pilots/{pilotId}`.
+
+    ### 2026-10-14 — First Pilot endpoint
+
+    - `GET /pilots/{pilotId}` returns `PilotDto`.
+    - Private fields are omitted when the caller is not logged in.
+paths:
+  /v1/pilots/{pilotId}:
+    get:
+      operationId: getPilot
+      summary: Pilot
+      description: |
+        JSON view of the Pilot model for `pilotId` at `GET /v1/pilots/{pilotId}`.
+
+        A non-empty `Authorization` header means the caller is logged in.
+        The header value is not validated here.
+
+        **Response semantics:**
+        * **200** — `PilotV1Dto`.
+        * **400** — `pilotId` is not an integer.
+        * **404** — no pilot exists for `pilotId`.
+        * **500** — the pilot source is not available.
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          description: >
+            Pilot identifier.
+          schema:
+            type: integer
+            format: int32
+      responses:
+        "200":
+          description: |
+            `PilotV1Dto`, a JSON view of the Pilot model.
+
+            Public fields are always present when known. Private fields are
+            included only when the caller is logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PilotV1Dto"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+components:
+  schemas:
+    PilotV1Dto:
+      type: object
+      description: |
+        Public pilot fields, plus private fields when the caller is logged in.
+
+        **Public**
+
+        - `pilotId` (required)
+        - `name`
+        - `corporation`
+        - `birthday`
+        - `description`
+        - `gender`
+        - `securityStatus`
+        - `url4Icon`
+        - `raceData`
+        - `ancestryData`
+        - `bloodlineData`
+
+        **Private** — omitted when the caller is not logged in
+
+        - `totalSkillpoints`
+        - `walletBalance`
+        - `currentShipName`
+        - `currentShipTypeName`
+        - `lastKnownLocation`
+      required:
+        - pilotId
+      properties:
+        pilotId:
+          type: number
+          description: >
+            Pilot identifier.
+        name:
+          type: string
+        corporation:
+          $ref: "#/components/schemas/PublicCorporationV1Dto"
+        birthday:
+          type: string
+        description:
+          type: string
+        gender:
+          type: string
+        securityStatus:
+          type: number
+        url4Icon:
+          type: string
+        raceData:
+          $ref: "#/components/schemas/UniverseRaceDataV1Dto"
+        ancestryData:
+          $ref: "#/components/schemas/UniverseAncestryDataV1Dto"
+        bloodlineData:
+          $ref: "#/components/schemas/UniverseBloodlineDataV1Dto"
+        totalSkillpoints:
+          type: number
+          description: |
+            Private. Omitted when the caller is not logged in.
+        walletBalance:
+          type: number
+          description: |
+            Private. Omitted when the caller is not logged in.
+        currentShipName:
+          type: string
+          description: |
+            Private. Omitted when the caller is not logged in.
+        currentShipTypeName:
+          type: string
+          description: |
+            Private. Omitted when the caller is not logged in.
+        lastKnownLocation:
+          $ref: "#/components/schemas/SpaceLocationV1Dto"
+    PublicCorporationV1Dto:
+      type: object
+      description: |
+        Public corporation data attached to a pilot.
+      properties:
+        corporationId:
+          type: number
+        name:
+          type: string
+        ceoid:
+          type: number
+        creatorId:
+          type: number
+        dateFounded:
+          type: string
+        description:
+          type: string
+        homeStation:
+          $ref: "#/components/schemas/StationV1Dto"
+        memberCount:
+          type: number
+        shares:
+          type: number
+        taxRate:
+          type: number
+        ticker:
+          type: string
+        url4Icon:
+          type: string
+        allianceId:
+          type: number
+        alliance:
+          $ref: "#/components/schemas/AllianceV1Dto"
+    StationV1Dto:
+      type: object
+      description: |
+        The `StationV1Dto` schema declares **no fields**.
+    AllianceV1Dto:
+      type: object
+      description: |
+        Alliance attached to a corporation.
+
+        Defaults:
+
+        | Field | Default |
+        | --- | --- |
+        | `allianceId` | `-5` |
+        | `name` | `-NAME-` |
+        | `ticker` | `TICK` |
+      properties:
+        allianceId:
+          type: number
+          default: -5
+        name:
+          type: string
+          default: "-NAME-"
+        ticker:
+          type: string
+          default: TICK
+        url4Icon:
+          type: string
+    UniverseRaceDataV1Dto:
+      type: object
+      description: |
+        Race data for a pilot.
+      properties:
+        allianceId:
+          type: number
+        description:
+          type: string
+        name:
+          type: string
+        raceId:
+          type: number
+    UniverseAncestryDataV1Dto:
+      type: object
+      description: |
+        Ancestry data for a pilot.
+      properties:
+        name:
+          type: string
+    UniverseBloodlineDataV1Dto:
+      type: object
+      description: |
+        Bloodline data for a pilot.
+      properties:
+        name:
+          type: string
+    SpaceLocationV1Dto:
+      type: object
+      description: |
+        The `SpaceLocationV1Dto` model declares **no fields**.
+
+    ErrorsInner:
+      description: |
+        Single validation or backend error entry.
+      type: object
+      required:
+        - code
+        - description
+      properties:
+        code:
+          type: string
+          example: "PILOT_NOT_FOUND"
+        description:
+          type: string
+          example: "No pilot exists for this identifier."
+        field:
+          type: string
+          example: "pilotId"
+        container:
+          type: string
+          example: "path"
+        value:
+          type: string
+          example: "93813310"
+
+    NeocomError:
+      description: |
+        Error response with one or more `errors` entries. `NeocomBackendError` serializes to this shape.
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorsInner"
+        traceId:
+          type: string
+          description: |
+            Optional correlation trace identifier when the upper layer has one.
+      example:
+        errors:
+          - code: "PILOT_NOT_FOUND"
+            description: "No pilot exists for this identifier."
+            field: "pilotId"
+            container: "path"
+            value: "93813310"
+
+  responses:
+    BadRequestResponse:
+      description: |
+        `pilotId` is missing or not an integer.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            InvalidPilotId:
+              summary: pilotId is not an integer
+              value:
+                errors:
+                  - code: "INVALID_REQUEST"
+                    description: "pilotId must be an integer."
+                    field: "pilotId"
+                    container: "path"
+                    value: "not-a-number"
+    NotFoundResponse:
+      description: |
+        No pilot exists for `pilotId`.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            PilotNotFound:
+              summary: Unknown pilot identifier
+              value:
+                errors:
+                  - code: "PILOT_NOT_FOUND"
+                    description: "No pilot exists for this identifier."
+                    field: "pilotId"
+                    container: "path"
+                    value: "93813310"
+    InternalServerErrorResponse:
+      description: |
+        The pilot source is not available, or another unexpected failure occurred.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            PilotSourceUnavailable:
+              summary: Pilot source is not available
+              value:
+                errors:
+                  - code: "INTERNAL_SERVER_ERROR"
+                    description: "The pilot source is not available."
+            UnexpectedInternalServerError:
+              value:
+                errors:
+                  - code: "INTERNAL_SERVER_ERROR"
+                    description: "Unexpected error produced during the request processing."

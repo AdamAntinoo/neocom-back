@@ -1,0 +1,404 @@
+openapi: 3.1.0
+info:
+  title: Payment Gateway Transaction Capture Adapter API - Version 0.2.0
+  version: 0.2.0
+  description: |
+    ### Payment Gateway Transaction Capture Adapter API
+
+    |||
+    |------------------|------------------------------------------|
+    |**Domain:**|Pagos Banca Electronica (pagos-banca-electronica)|
+    |**Subdomain:**|Next Hub (nexthub)|
+    |**Service:**|Payment Gateway Transaction Capture Adapter|
+    |**Application:**|payment-gateway-transaction-adapter (`GTA-001`)|
+    ---
+
+    Ingestion-only HTTP API for **PR278 Next Hub**. Payment gateways submit a
+    `GatewayPaymentRequestDto` JSON envelope via **mTLS**. `GTA-001` validates identity,
+    encrypts the `MSG` field (AES-256-GCM + AWS KMS envelope encryption), publishes an
+    `EncryptedRawPaymentGatewayMessage` JSON message to Kafka `raw.v1`, and returns **HTTP 202**
+    only after a durable broker ACK.
+
+    **Goals (v0.2):**
+    * **Must:** **`POST /v1/gateway/payments`** — accept `GatewayPaymentRequestDto`; return **202** after Kafka durable ACK.
+    * **Must:** Accept `Content-Type: application/json` **or** `text/plain` carrying the same JSON object body.
+    * **Must not:** interpret or log functional `MSG` content beyond structural validation.
+
+    **General behaviour:**
+    * Write-only ingestion endpoint; no read/query operations.
+    * Authentication is **mutual TLS** (client certificate mandatory). OAuth/JWT is **not** used on this pathway.
+    * Success response body includes adapter-generated `messageId` and `correlationId` for gateway-side traceability.
+    * Error bodies use Cecabank **`NeocomError`** (`errors[]` with `ErrorsInner` entries).
+    * Documented HTTP error statuses (no Apigee in front): **400**, **415**, **500**
+      (additional auth/client statuses may be added when requirements are closed).
+
+    ## Operations (v0.2)
+
+    | Priority | Method | Path | Summary |
+    |----------|--------|------|---------|
+    | **Must** | `POST` | `/v1/gateway/payments` | Ingest `GatewayPaymentRequestDto` |
+
+    ## Security
+
+    **Mutual TLS (mTLS)** — payment gateway presents a client certificate; `GTA-001` extracts `gatewayId` from the
+    certificate and validates it against the authorised gateway list before processing the payload.
+
+    Certificate rotation: both current and successor trust anchors may be configured during overlap
+    (`Q-SEC-003` — see `05.CODE-DESIGN/01.MTLS-CERTIFICATE-ROTATION.md`).
+
+    ## Kafka event contract
+
+    HTTP ingestion is documented here (OpenAPI). The Kafka output contract is documented in
+    `tools/asynchapi/gateway-adapter-events-v0.1.0.yaml` (JSON — `Q-KAFKA-006`).
+
+    ## Change log
+
+    * `0.2.0` — Request body is `GatewayPaymentRequestDto` JSON (`CSBADQ`, `CSBEMI`, `IDTRANS`, `MSG`).
+      `CSBADQ` / `CSBEMI` are **string** fields (`^[0-9]{1,4}$`). Supported media types:
+      `application/json` and `text/plain` (same JSON object bytes). Missing or unsupported
+      `Content-Type` → **HTTP 415** (`INVALID_CONTENT_TYPE`). DTO field validation failures remain
+      **HTTP 400**. Aligns with [01.GATEWAY-MODELS.md](../doc/04.REQUIREMENTS/01.MODELS/01.GATEWAY-MODELS.md).
+    * `0.1.0` — Initial ingestion contract: **`POST /v1/gateway/payments`**; mTLS security; opaque
+      free-text body draft; **202** acceptance semantics; adapter error model.
+
+  contact:
+    name: CKB Development team
+    email: ldiego@external.cecabank.es
+    url: https://confluence.ceca.es/display/EAS/Equipo+APIs+SFTP+Home
+  license:
+    name: Copyright Cecabank
+    url: https://confluence.ceca.es/display/EAS/Equipo+APIs+SFTP+Home
+
+tags:
+  - name: raw-transaction-ingestion
+    description: |
+      Ingest payment-gateway transaction payloads as `GatewayPaymentRequestDto`. Functional `MSG`
+      content is not interpreted by `GTA-001`; only encrypted and forwarded to Kafka `raw.v1`.
+
+servers:
+  - url: https://localhost:9060
+    description: Local development server (mTLS)
+  - url: https://gateway-adapter-dev.nexthub.internal
+    description: Development server (Next Hub)
+  - url: https://gateway-adapter-pre.nexthub.internal
+    description: Preproduction server (Next Hub)
+  - url: https://gateway-adapter.nexthub.internal
+    description: Production server (Next Hub)
+
+paths:
+  /v1/gateway/payments:
+    description: |
+      Raw transaction ingestion boundary. Payment gateways POST a `GatewayPaymentRequestDto` JSON
+      object using `Content-Type: application/json` or `text/plain`. `GTA-001` returns **HTTP 202**
+      only after Kafka `raw.v1` durable ACK. Empty body is rejected (**400**). Unsupported or missing
+      media type is rejected (**415**).
+    post:
+      tags:
+        - raw-transaction-ingestion
+      summary: Ingest raw payment gateway transaction payload
+      description: |
+        Accepts a `GatewayPaymentRequestDto` JSON object from an authorised payment gateway.
+
+        Both supported media types carry the **same JSON object encoding**. The adapter parses the
+        body into `GatewayPaymentRequestDto` via JSON conversion regardless of whether the
+        `Content-Type` is `application/json` or `text/plain`.
+
+        **Processing (synchronous critical path):**
+        1. mTLS identity extraction (`gatewayId` from client certificate).
+        2. Authorisation against configured gateway allow-list.
+        3. HTTP structural validation (`Content-Type`, body parse, DTO field rules).
+        4. Correlation (`messageId` UUIDv7, `correlationId`, `receivedAt`).
+        5. Idempotency fingerprint (`idempotencyKey` over `gatewayId` + `MSG` bytes).
+        6. KMS envelope encryption of `MSG` (AES-256-GCM).
+        7. Kafka produce to `raw.v1` with `acks=all` and wait for durable ACK.
+
+        **Response semantics:**
+        * **202** — message durably accepted to Kafka; body includes `messageId` / `correlationId`.
+        * **400** — bad request (malformed JSON / DTO field validation); no Kafka publish.
+        * **415** — missing or unsupported `Content-Type` (not `application/json` or `text/plain`).
+        * **500** — system failure (unexpected error or downstream failure after retries).
+
+        **Payload contract:** see [01.GATEWAY-MODELS.md](../doc/04.REQUIREMENTS/01.MODELS/01.GATEWAY-MODELS.md) §1.1.
+        Functional schema of `MSG` is owned by the payment gateway and downstream Apache Flink.
+      operationId: ingestRawTransactionV1
+      requestBody:
+        required: true
+        description: |
+          `GatewayPaymentRequestDto` JSON object. Supported media types `application/json` and
+          `text/plain` carry the same JSON bytes. Must not exceed configured
+          `gta.ingestion.max-payload-bytes` when that limit is enforced.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GatewayPaymentRequestDto"
+            examples:
+              NominalDto:
+                $ref: "#/components/examples/NominalGatewayPaymentRequest"
+          text/plain:
+            schema:
+              $ref: "#/components/schemas/GatewayPaymentRequestDto"
+            examples:
+              NominalDtoAsText:
+                $ref: "#/components/examples/NominalGatewayPaymentRequest"
+      responses:
+        "202":
+          description: |
+            Accepted — `EncryptedRawPaymentGatewayMessage` durably written to Kafka `raw.v1` before this response.
+          headers:
+            X-Trace-ID:
+              $ref: "#/components/headers/X-Trace-ID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionAcceptedResponse"
+              examples:
+                Accepted:
+                  summary: Nominal acceptance
+                  value:
+                    messageId: "01978f4c-0000-7000-8000-000000000001"
+                    correlationId: "01978f4c-0000-7000-8000-000000000001"
+                    receivedAt: "2026-07-29T09:00:00.123Z"
+                    gatewayId: "6c1113d0"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaTypeResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+
+components:
+  examples:
+    NominalGatewayPaymentRequest:
+      summary: Nominal GatewayPaymentRequestDto
+      value:
+        CSBADQ: "2080"
+        CSBEMI: "2080"
+        IDTRANS: "07260709082632000001"
+        MSG: "R3085351864#SM055790265-##4761731000000027=311220119058101"
+
+  schemas:
+    Uuid:
+      description: |
+        Unique Universal Identifier (UUID) version 4, as described in IETF RFC 4122.
+      type: string
+      format: uuid
+      minLength: 36
+      maxLength: 36
+      pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      example: "62977d46-7a50-41c9-8d84-38272ac2a8df"
+
+    GatewayPaymentRequestDto:
+      description: |
+        HTTP ingestion envelope on `POST /v1/gateway/payments`. Same JSON object for
+        `application/json` and `text/plain`. See [01.GATEWAY-MODELS.md](../doc/04.REQUIREMENTS/01.MODELS/01.GATEWAY-MODELS.md) §1.1.
+      type: object
+      required:
+        - CSBADQ
+        - CSBEMI
+        - IDTRANS
+        - MSG
+      properties:
+        CSBADQ:
+          type: string
+          description: Acquirer bank code as a numeric string. Unsigned integer `0`–`9999`.
+          pattern: "^[0-9]{1,4}$"
+          example: "2080"
+        CSBEMI:
+          type: string
+          description: Issuer bank code as a numeric string. Unsigned integer `0`–`9999`.
+          pattern: "^[0-9]{1,4}$"
+          example: "2080"
+        IDTRANS:
+          type: string
+          description: Gateway transaction identifier (non-blank).
+          minLength: 1
+          example: "07260709082632000001"
+        MSG:
+          type: string
+          description: |
+            Functional TPV / ISO message. Mandatory, non-blank, minimum length 23.
+            Encrypted into Kafka `rawPayload`; not interpreted beyond structural checks.
+          minLength: 23
+          example: "R3085351864#SM055790265-##4761731000000027=311220119058101"
+
+    ErrorsInner:
+      description: Single validation or business error entry.
+      type: object
+      required:
+        - code
+        - description
+      properties:
+        code:
+          type: string
+          example: "MISSING_MANDATORY_FIELD"
+        description:
+          type: string
+          example: "Error description"
+        field:
+          type: string
+          example: "CSBADQ"
+        container:
+          type: string
+          example: "request"
+        value:
+          type: string
+          example: "20801"
+
+    NeocomError:
+      description: Error response with one or more `errors` entries.
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorsInner"
+        traceId:
+          type: string
+          description: Optional correlation trace identifier when present on the exchange.
+      example:
+        errors:
+          - code: "MISSING_MANDATORY_FIELD"
+            description: "Mandatory field 'CSBADQ' is required."
+            field: "CSBADQ"
+            container: "request"
+
+    IngestionAcceptedResponse:
+      description: |
+        Returned on **HTTP 202** after durable Kafka ACK. Identifiers are generated by `GTA-001` —
+        not supplied by the gateway.
+      type: object
+      required:
+        - messageId
+        - correlationId
+        - receivedAt
+        - gatewayId
+      properties:
+        messageId:
+          type: string
+          description: UUIDv7 message identifier generated by the adapter.
+          example: "01978f4c-0000-7000-8000-000000000001"
+        correlationId:
+          type: string
+          description: Correlation identifier; equals `messageId` at ingestion.
+          example: "01978f4c-0000-7000-8000-000000000001"
+        receivedAt:
+          type: string
+          format: date-time
+          description: UTC reception timestamp (ISO 8601, millisecond precision).
+          example: "2026-07-29T09:00:00.123Z"
+        gatewayId:
+          type: string
+          description: Authorised gateway identifier extracted from the mTLS client certificate.
+          example: "6c1113d0"
+
+  headers:
+    X-Trace-ID:
+      description: Correlation trace identifier echoed on every response (UUID v4).
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+      example: "62977d46-7a50-41c9-8d84-38272ac2a8df"
+
+  responses:
+    BadRequestResponse:
+      headers:
+        X-Trace-ID:
+          $ref: "#/components/headers/X-Trace-ID"
+      description: |
+        Invalid request body or DTO field validation failure (malformed JSON, missing mandatory
+        fields, bank-code digit rules, `MSG` length, empty body). Does **not** cover unsupported
+        `Content-Type` (see **415**).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            InvalidRequest:
+              summary: Malformed JSON / non-object body
+              value:
+                errors:
+                  - code: "INVALID_REQUEST"
+                    description: "Request body is not a valid payment gateway envelope."
+            MissingMandatoryField:
+              summary: Missing mandatory DTO field
+              value:
+                errors:
+                  - code: "MISSING_MANDATORY_FIELD"
+                    description: "Mandatory field 'CSBADQ' is required."
+                    field: "CSBADQ"
+                    container: "request"
+            EmptyBody:
+              summary: Empty body rejected
+              value:
+                errors:
+                  - code: "MISSING_MANDATORY_FIELD"
+                    description: "Request body is required."
+                    field: "body"
+                    container: "request"
+
+    UnsupportedMediaTypeResponse:
+      headers:
+        X-Trace-ID:
+          $ref: "#/components/headers/X-Trace-ID"
+      description: |
+        Missing or unsupported `Content-Type`. Supported media types are `application/json` and
+        `text/plain` only.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            UnsupportedContentType:
+              summary: Unsupported Content-Type
+              value:
+                errors:
+                  - code: "INVALID_CONTENT_TYPE"
+                    description: "Content-Type must be 'application/json' or 'text/plain' but was 'application/xml'."
+                    field: "contentType"
+                    container: "request"
+                    value: "application/xml"
+            MissingContentType:
+              summary: Missing Content-Type
+              value:
+                errors:
+                  - code: "INVALID_CONTENT_TYPE"
+                    description: "Content-Type must be 'application/json' or 'text/plain' but was '<missing>'."
+                    field: "contentType"
+                    container: "request"
+                    value: "<missing>"
+
+    InternalServerErrorResponse:
+      headers:
+        X-Trace-ID:
+          $ref: "#/components/headers/X-Trace-ID"
+      description: |
+        System failure (unexpected error, or downstream KMS/Kafka failure after retries).
+        Additional specialised 5xx statuses may be added later by requirement.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            UnexpectedInternalServerError:
+              value:
+                errors:
+                  - code: "INTERNAL_SERVER_ERROR"
+                    description: "Unexpected error produced during the request processing."
+            DownstreamUnavailable:
+              summary: KMS or Kafka unavailable after retries
+              value:
+                errors:
+                  - code: "INTERNAL_SERVER_ERROR"
+                    description: "Downstream publish could not be confirmed."
+
+  securitySchemes:
+    mutualTLS:
+      type: http
+      scheme: mutual-tls
+      description: |
+        Payment gateway client certificate required. `gatewayId` is extracted from the certificate
+        (Subject CN or SAN — see `Q-SEC-002`). Trust material supports overlapping current/successor
+        certificates during rotation (`Q-SEC-003`).
+
+security:
+  - mutualTLS: [ ]
