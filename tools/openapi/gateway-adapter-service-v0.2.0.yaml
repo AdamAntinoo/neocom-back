@@ -28,7 +28,7 @@ info:
     * Write-only ingestion endpoint; no read/query operations.
     * Authentication is **mutual TLS** (client certificate mandatory). OAuth/JWT is **not** used on this pathway.
     * Success response body includes adapter-generated `messageId` and `correlationId` for gateway-side traceability.
-    * Error bodies use Cecabank **`StandardError`** (`errors[]` with `ErrorsInner` entries).
+    * Error bodies use Cecabank **`NeocomError`** (`errors[]` with `ErrorsInner` entries).
     * Documented HTTP error statuses (no Apigee in front): **400**, **415**, **500**
       (additional auth/client statuses may be added when requirements are closed).
 
@@ -244,7 +244,7 @@ components:
           type: string
           example: "20801"
 
-    StandardError:
+    NeocomError:
       description: Error response with one or more `errors` entries.
       type: object
       properties:
@@ -311,7 +311,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/StandardError"
+            $ref: "#/components/schemas/NeocomError"
           examples:
             InvalidRequest:
               summary: Malformed JSON / non-object body
@@ -346,7 +346,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/StandardError"
+            $ref: "#/components/schemas/NeocomError"
           examples:
             UnsupportedContentType:
               summary: Unsupported Content-Type
@@ -377,7 +377,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/StandardError"
+            $ref: "#/components/schemas/NeocomError"
           examples:
             UnexpectedInternalServerError:
               value:
