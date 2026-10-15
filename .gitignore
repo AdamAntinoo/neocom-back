@@ -23,6 +23,11 @@ lerna-debug.log*
 .env.test
 .env.production
 
+# ESI SSO token store (BACK-014)
+/tokens.json
+/tokens.json.lock
+/tokens.json.*.lock
+
 # temp directory
 .temp
 .tmp
