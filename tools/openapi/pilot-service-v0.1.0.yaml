@@ -7,7 +7,7 @@ info:
 
     `GET /v1/pilots/{pilotId}` returns `PilotV1Dto`.
 
-    The controller returns that DTO. Failures are thrown and written by an upper layer as `StandardError`.
+    The controller returns that DTO. Failures are thrown and written by an upper layer as `NeocomError`.
 
     Private fields are **omitted** when the caller is not logged in:
 
@@ -21,13 +21,13 @@ info:
 
     ## Changelog
 
-    ### 2026-10-14 — StandardError responses
+    ### 2026-10-14 — NeocomError responses
 
     - Success stays `PilotV1Dto`.
     - **400** — `pilotId` is not an integer (`INVALID_REQUEST`).
     - **404** — no pilot for that identifier (`PILOT_NOT_FOUND`).
     - **500** — the pilot source is not available (`INTERNAL_SERVER_ERROR`).
-    - Error bodies use `StandardError`.
+    - Error bodies use `NeocomError`.
 
     ### 2026-10-14 — Schema names
 
@@ -283,7 +283,7 @@ components:
           type: string
           example: "93813310"
 
-    StandardError:
+    NeocomError:
       description: |
         Error response with one or more `errors` entries. `NeocomBackendError` serializes to this shape.
       type: object
@@ -311,7 +311,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/StandardError"
+            $ref: "#/components/schemas/NeocomError"
           examples:
             InvalidPilotId:
               summary: pilotId is not an integer
@@ -328,7 +328,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/StandardError"
+            $ref: "#/components/schemas/NeocomError"
           examples:
             PilotNotFound:
               summary: Unknown pilot identifier
@@ -345,7 +345,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/StandardError"
+            $ref: "#/components/schemas/NeocomError"
           examples:
             PilotSourceUnavailable:
               summary: Pilot source is not available

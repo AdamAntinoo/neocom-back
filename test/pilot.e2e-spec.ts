@@ -33,7 +33,7 @@ describe('Pilot endpoint (e2e)', () => {
     await app.init();
   });
 
-  it('GET /v1/pilots/:pilotId returns StandardError when pilotId is not an integer', () => {
+  it('GET /v1/pilots/:pilotId returns NeocomError when pilotId is not an integer', () => {
     return request(app.getHttpServer())
       .get('/v1/pilots/not-a-number')
       .expect(400)
