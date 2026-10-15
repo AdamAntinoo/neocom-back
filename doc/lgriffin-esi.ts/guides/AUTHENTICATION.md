@@ -12,15 +12,19 @@ Three rules hold for every path on this page:
 
 ---
 
+
+
 ## 1. One token
 
 Three ways to give a client a token, in order of precedence:
+
 
 | Source               | How                                                     | Use for                            |
 | -------------------- | ------------------------------------------------------- | ---------------------------------- |
 | Constructor option   | `new EsiClient({ accessToken })`                        | Apps that manage tokens themselves |
 | Runtime update       | `client.setAccessToken(newToken)`                       | Replacing a token you refreshed    |
 | Environment variable | `ESI_ACCESS_TOKEN`, read when the client is constructed | Scripts, examples, CI              |
+
 
 ```typescript
 import 'dotenv/config';
@@ -68,6 +72,8 @@ Behaviour, each pinned by a scenario in `tests/bdd/features/core/`:
 - **Coalesced.** Concurrent 401s share one call to your callback.
 - **Typed failure.** A callback that throws anything other than an `EsiError` surfaces as an `EsiTokenRefreshError` (code `TOKEN_REFRESH_FAILED`) with what it threw, such as a `TokenRevokedError`, on `cause`. A callback that throws an `EsiError`, including `CircuitOpenError`, has that error propagate unchanged (`src/core/RetryStrategy.ts`).
 - **No provider, no refresh.** A 401 throws immediately.
+
+
 
 ## 3. Many characters: `EsiTokenManager`
 
@@ -172,15 +178,19 @@ for (const r of results) {
 }
 ```
 
+
+
 ### Storage adapters
 
 `ITokenStorage` is four async methods keyed by character id: `get`, `set`, `delete` and `list`, plus an optional `withLock` for stores that several processes share.
+
 
 | Adapter                              | Use for                                                                   |
 | ------------------------------------ | ------------------------------------------------------------------------- |
 | `MemoryTokenStorage`                 | Tests, CLIs that log in on every run, a cache in front of a durable store |
 | `FileTokenStorage`                   | Single-process apps. Writes go to a temp file then a rename, mode `0600`  |
 | `FileTokenStorage` with `lock: true` | Several processes on one machine sharing one token file (workers, cron)   |
+
 
 Implement the interface over Redis, Postgres or a keychain for anything else. `set` must be durable before it resolves. The manager persists the rotated refresh token before it returns the new access token, and SSO has already invalidated the previous one.
 
@@ -201,11 +211,13 @@ const tokens = new EsiTokenManager({
 
 With `lock` on, `FileTokenStorage` takes an advisory lock file next to the token file for every write (`tokens.json.lock`) and one per character for every refresh (`tokens.json.<characterId>.lock`), so refreshes of different characters still run in parallel. It also reads the file on every `get` instead of keeping a copy in memory. The lock options are:
 
+
 | Option      | Default | Meaning                                                                                                   |
 | ----------- | ------- | --------------------------------------------------------------------------------------------------------- |
 | `staleMs`   | 30 000  | A lock older than this is taken to belong to a crashed process and is broken. Keep it above one SSO call. |
 | `timeoutMs` | 60 000  | How long a write or refresh waits for the lock, queueing in this process included, before it rejects.     |
 | `retryMs`   | 25      | Pause between attempts to take the lock.                                                                  |
+
 
 Each timing must be a positive, finite number, or the constructor throws a `RangeError`. The lock file only works between processes that see the same file system with working hard links, so a local disk rather than a network share. A holder that keeps the lock longer than `staleMs` can lose it to a waiter, and a refresh then behaves as it did without the lock. SSO calls have no timeout unless you set one, and an SSO request that hangs holds that character's lock until it ends; if that outlasts `staleMs`, a waiter breaks the lock and may spend a refresh token the hung request already rotated. Set `ssoTimeoutMs` on the manager (or `timeoutMs` on an `EveSsoClient` you pass as `ssoClient`) well below `staleMs`. A request that SSO does not answer in time rejects with an `SsoError` whose `statusCode` is 0, `errorCode` is `timeout` and `isRetryable()` is true, and `refreshAll` reports it as a retryable failure. When SSO sends a status but the body is late, the error keeps that status: a late 2xx is not retryable, because SSO has probably rotated the refresh token already and the old one would be refused. For processes on different machines, implement `withLock` over the shared store itself, for example Redis `SET key value NX PX` with a token you check before deleting the key. Adapters without `withLock` behave exactly as before.
 
@@ -249,6 +261,8 @@ async function characterFromBearer(token: string): Promise<number | null> {
 - **Hooks.** `onRefresh`, `onRefreshError` and `onRevoked` are there for logging, metrics or prompting a re-login.
 - **No JWT signature verification by default.** Tokens are trusted because they arrive straight from SSO over TLS. Do not use `decodeAccessToken` to authenticate a token a third party hands you; use `verifyAccessToken`, or `verifyTokens: true` on the manager (see [Verifying tokens from a third party](#verifying-tokens-from-a-third-party)).
 - **One process per store, unless the store locks.** Two processes sharing a store without `withLock` would each rotate refresh tokens the other cannot see. Use `FileTokenStorage` with `lock: true`, or an adapter of your own that implements `withLock`; see [Sharing a store between processes](#sharing-a-store-between-processes).
+
+
 
 ## 4. What 11.0.0 changes
 
