@@ -41,3 +41,5 @@ src/generated/pilot/package.json
 src/generated/pilot/README.md
 src/generated/pilot/tslint.json
 src/generated/pilot/variables.ts
+
+.env.esisso
