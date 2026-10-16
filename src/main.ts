@@ -42,28 +42,30 @@ function printData(configService: ConfigService) {
   console.log('Listening on port: ' + START_YELLOW + port + END_ENHANCED);
 }
 
+async function printBanner(bannerFile: string | undefined) {
+  const path = bannerFile ?? '.app-banner.txt';
+  try {
+    console.log(await readFile(path, 'utf8'));
+  } catch {
+    console.log(`BANNER file not found: ${path}`);
+  }
+}
+
 async function bootstrap() {
   let logLevel = process.env.LOGLEVEL;
   if (logLevel === undefined) {
     logLevel = 'debug';
   }
+
+  await printBanner(process.env.BANNER);
+
   const app = await NestFactory.create(AppModule, { logger: loggers(logLevel) });
   app.use(cookieParser());
   const configService = app.get(ConfigService);
   const port = Number(configService.get('PORT')) || 3000;
   await app.listen(port);
 
-  const bannerFile = configService.get<string>('BANNER');
   printData(configService);
-  if (bannerFile === undefined) {
-    console.log('BANNER NOT DEFINED.');
-  } else {
-    try {
-      console.log(await readFile(bannerFile, 'utf8'));
-    } catch {
-      console.log(`BANNER file not found: ${bannerFile}`);
-    }
-  }
   console.log(START_GREEN + '>>> Server Ready for Connections <<<' + END_ENHANCED);
 }
 
