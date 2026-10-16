@@ -58,7 +58,11 @@ async function bootstrap() {
   if (bannerFile === undefined) {
     console.log('BANNER NOT DEFINED.');
   } else {
-    console.log(await readFile(bannerFile, 'utf8'));
+    try {
+      console.log(await readFile(bannerFile, 'utf8'));
+    } catch {
+      console.log(`BANNER file not found: ${bannerFile}`);
+    }
   }
   console.log(START_GREEN + '>>> Server Ready for Connections <<<' + END_ENHANCED);
 }

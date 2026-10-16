@@ -17,11 +17,13 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# dotenv environment variable files
+# dotenv environment variable files (local overlays; committed templates are .env.application / .env.esisso / .env.version)
 .env
 .env.development
 .env.test
 .env.production
+.env.local
+.env.*.local
 
 # ESI SSO token store (BACK-014)
 /tokens.json
