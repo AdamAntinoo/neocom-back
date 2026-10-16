@@ -8,13 +8,12 @@ import { PilotModule } from '@Infra/pilot.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
-const env = process.env.NODE_ENV;
-
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [!env ? '.env' : `.env.${env}`, '.env.version'],
+      // Application runtime, EVE SSO, then VERSION. First file wins on duplicate keys.
+      envFilePath: ['.env.application', '.env.esisso', '.env.version'],
     }),
     AuthModule,
     PilotModule,
