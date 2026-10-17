@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { BlueprintListService } from '../../../async/blueprint-list.service.js';
 import { SseFanoutService, type SseMessage } from '../../../async/sse-fanout.service.js';
 
-@Controller('api/v1/pilots/:pilotId/manufacture')
+@Controller('v1/pilots/:pilotId/manufacture')
 export class V1BlueprintListController {
   constructor(
     private readonly blueprints: BlueprintListService,
