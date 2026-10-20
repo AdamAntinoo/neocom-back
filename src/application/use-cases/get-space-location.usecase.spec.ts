@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GetSpaceLocationUseCase } from './get-space-location.usecase.js';
-import type { LocationCatalog } from '@App/ports/location-catalog.port.js';
+import type { LocationCatalog } from '@Domain/ports/location-catalog.port.js';
 import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
 import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
 

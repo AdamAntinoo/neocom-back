@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { V1BlueprintListController } from '../adapters/inbound/async/v1-blueprint-list.controller.js';
-import { BlueprintListService } from './blueprint-list.service.js';
-import { EnrichmentQueueService } from './enrichment-queue.service.js';
-import { InMemoryProcessedNodeStore } from './in-memory-processed-node.store.js';
-import { ProcessedNodeEntity } from './processed-node.entity.js';
-import { ProcessedNodeStore } from './processed-node.store.js';
-import { SseFanoutService } from './sse-fanout.service.js';
-import { TypeOrmProcessedNodeStore } from './typeorm-processed-node.store.js';
+import { NODE_ENRICHER } from '@Domain/ports/node-enricher.port.js';
+import { ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
+import { V1BlueprintListController } from '@Inbound/industry/v1-blueprint-list.controller.js';
+import { BlueprintListService } from '@Outbound/blueprint-list/blueprint-list.service.js';
+import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
+import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
+import { InMemoryProcessedNodeStore } from '@Outbound/persistence/in-memory-processed-node.store.js';
+import { ProcessedNodeEntity } from '@Outbound/persistence/processed-node.entity.js';
+import { TypeOrmProcessedNodeStore } from '@Outbound/persistence/typeorm-processed-node.store.js';
 
 const useTypeOrm = Boolean(process.env['DATABASE_URL']);
 
@@ -35,8 +36,9 @@ const useTypeOrm = Boolean(process.env['DATABASE_URL']);
   controllers: [V1BlueprintListController],
   providers: [
     SseFanoutService,
-    EnrichmentQueueService,
     BlueprintListService,
+    { provide: NODE_ENRICHER, useExisting: BlueprintListService },
+    EnrichmentQueueService,
     InMemoryProcessedNodeStore,
     ...(useTypeOrm ? [TypeOrmProcessedNodeStore] : []),
     {

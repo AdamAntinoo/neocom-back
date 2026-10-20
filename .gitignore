@@ -1,5 +1,10 @@
 .DS_Store
 
+# macOS Finder / sync conflict copies ("Name 2.ext") — never commit
+* 2.*
+* 2
+.env 2.application
+
 # Nestjs specific
 /dist
 /node_modules

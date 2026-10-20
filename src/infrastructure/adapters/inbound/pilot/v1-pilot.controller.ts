@@ -1,7 +1,7 @@
 import { Controller, Get, Headers, Param } from '@nestjs/common';
 import type { PilotV2, PublicPilotV1 } from 'neocom-domain';
 import { GetPilotUseCase } from '@App/use-cases/get-pilot.usecase.js';
-import type { PilotApi } from '@Infra/api/pilot.api.js';
+import type { PilotApi } from '@Infra/adapters/api/pilot.api.js';
 import {
   ExceptionCatalog,
   exceptionPayload,

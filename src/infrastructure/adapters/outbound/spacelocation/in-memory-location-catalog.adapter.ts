@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { LocationCatalog } from '@App/ports/location-catalog.port.js';
+import type { LocationCatalog } from '@Domain/ports/location-catalog.port.js';
 import {
   LOCATION_FIXTURE,
   type SpaceLocation,

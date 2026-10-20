@@ -23,6 +23,9 @@
       "@App/*": ["./src/application/*"],
       "@Domain/*": ["./src/domain/*"],
       "@Infra/*": ["./src/infrastructure/*"],
+      "@Inbound/*": ["./src/infrastructure/adapters/inbound/*"],
+      "@Outbound/*": ["./src/infrastructure/adapters/outbound/*"],
+      "@Generated/*": ["./src/generated/*"],
       "neocom-domain": ["../neocom-domain/dist/index"],
       "neocom-domain/*": ["../neocom-domain/dist/*"]
     }

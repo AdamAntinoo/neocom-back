@@ -1,8 +1,9 @@
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { EsiClient } from '@lgriffin/esi.ts';
-import { ProcessedNodeStore } from './processed-node.store.js';
-import { SseFanoutService } from './sse-fanout.service.js';
-import { EnrichmentQueueService } from './enrichment-queue.service.js';
+import type { NodeEnricher } from '@Domain/ports/node-enricher.port.js';
+import { ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
+import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
+import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
 
 export type BlueprintListItem = {
   jsonClass: 'ProcessedBlueprint';
@@ -17,19 +18,18 @@ export type BlueprintListItem = {
 const STALE_MS = 60 * 60 * 1000;
 
 @Injectable()
-export class BlueprintListService {
+export class BlueprintListService implements NodeEnricher {
   private readonly logger = new Logger(BlueprintListService.name);
   private readonly esi = new EsiClient({ clientId: 'neocom-back-async' });
 
   constructor(
     private readonly store: ProcessedNodeStore,
     private readonly fanout: SseFanoutService,
-    @Inject(forwardRef(() => EnrichmentQueueService))
     private readonly queue: EnrichmentQueueService,
   ) {}
 
   scopeKey(pilotId: number): string {
-    return `pilot:${pilotId}:manufacture-blueprints`;
+    return `pilot:${pilotId}:industry-blueprints`;
   }
 
   /**
