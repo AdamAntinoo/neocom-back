@@ -1,8 +1,8 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { V1AuthController } from '@Infra/adapters/inbound/auth/v1-auth.controller.js';
+import { V1AuthController } from '@Inbound/auth/v1-auth.controller.js';
+import { AuthService } from '@Infra/adapters/services/auth.service.js';
 import { AccessCookieMiddleware } from './access-cookie.middleware.js';
-import { AuthService } from './auth.service.js';
 import { createEsiTokenManager, ESI_TOKEN_MANAGER } from './esi-token-manager.provider.js';
 
 @Module({

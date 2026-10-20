@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Sync schema after pull/merge brings new tools/db/sql versions.
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec bash "${ROOT}/tools/db/git-sync.sh"

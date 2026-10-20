@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Observable, Subject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 export type NodeUpdatedEvent = {
   scopeKey: string;
@@ -52,7 +52,7 @@ export class SseFanoutService implements OnModuleDestroy {
     await this.subscriber.connect();
     const pattern = `${this.prefix}*`;
     await this.subscriber.psubscribe(pattern);
-    this.subscriber.on('pmessage', (_pattern, channel, message) => {
+    this.subscriber.on('pmessage', (_pattern: string, channel: string, message: string) => {
       const scopeKey = channel.slice(this.prefix.length);
       try {
         const payload = JSON.parse(message) as Omit<NodeUpdatedEvent, 'scopeKey'>;

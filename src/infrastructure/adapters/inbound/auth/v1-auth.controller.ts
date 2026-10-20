@@ -1,6 +1,6 @@
 import { Body, Controller, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { AuthService, NEOCOM_SSO_STATE } from '@Infra/auth/auth.service.js';
+import { AuthService, NEOCOM_SSO_STATE } from '@Infra/adapters/services/auth.service.js';
 
 interface CallbackBody {
   code?: string;

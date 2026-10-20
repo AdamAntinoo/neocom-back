@@ -1,0 +1,43 @@
+# External services for local neocom-back (PostgreSQL + Redis).
+# Usage from neocom-back:
+#   docker compose -f tools/docker/docker-compose.yml up -d
+#   npm run docker:up
+#
+# Connect with DATABASE_URL / REDIS_URL from .env.async.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: neocom-back-postgres
+    environment:
+      POSTGRES_USER: neocom
+      POSTGRES_PASSWORD: neocom
+      POSTGRES_DB: neocom_async
+    ports:
+      # Host 6003 (dev-watch back stack: front 6001, back 6002, postgres 6003).
+      - '6003:5432'
+    volumes:
+      - neocom_back_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U neocom -d neocom_async']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: neocom-back-redis
+    ports:
+      # Host 6004 (next after postgres 6003).
+      - '6004:6379'
+    volumes:
+      - neocom_back_redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  neocom_back_pg:
+  neocom_back_redis:

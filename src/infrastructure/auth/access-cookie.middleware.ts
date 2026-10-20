@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
-import { AuthService } from './auth.service.js';
-import { NEOCOM_ACCESS } from './auth-cookies.js';
+import { NEOCOM_ACCESS } from '@Infra/adapters/services/auth-cookies.service.js';
+import { AuthService } from '@Infra/adapters/services/auth.service.js';
 
 /**
  * When `neocom_access` is present, refresh/replace it via EsiTokenManager (BACK-016, BACK-017).

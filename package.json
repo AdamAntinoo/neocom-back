@@ -9,7 +9,10 @@
   "imports": {
     "@App/*": "./dist/application/*",
     "@Domain/*": "./dist/domain/*",
-    "@Infra/*": "./dist/infrastructure/*"
+    "@Infra/*": "./dist/infrastructure/*",
+    "@Inbound/*": "./dist/infrastructure/adapters/inbound/*",
+    "@Outbound/*": "./dist/infrastructure/adapters/outbound/*",
+    "@Generated/*": "./dist/generated/*"
   },
   "scripts": {
     "build": "nest build",
@@ -21,13 +24,21 @@
     "start:prod": "node dist/main",
     "banner": "node scripts/generate-banner.mjs",
     "version:sync": "node scripts/sync-version.mjs",
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "docker:up": "docker compose -f tools/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f tools/docker/docker-compose.yml down",
+    "docker:ps": "docker compose -f tools/docker/docker-compose.yml ps",
+    "db:info": "bash tools/db/flyway.sh info",
+    "db:migrate": "bash tools/db/flyway.sh migrate",
+    "db:validate": "bash tools/db/flyway.sh validate",
+    "db:sync": "bash tools/db/git-sync.sh",
+    "openapi:pilot": "openapi-generator generate -i tools/openapi/pilot-service-v0.1.0.yaml -g typescript-nestjs -o src/generated/pilot --additional-properties=fileNaming=kebab-case,withInterfaces=true,supportsES6=true,modelPropertyNaming=original,npmName=neocom-back-pilot-api,npmVersion=0.0.1 && node scripts/fix-generated-pilot-imports.mjs"
   },
   "dependencies": {
     "@lgriffin/esi.ts": "^12.0.0",

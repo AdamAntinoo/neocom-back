@@ -12,8 +12,8 @@ import {
   parseAccessCookie,
   setAccessCookie,
   type AccessCookieValue,
-} from './auth-cookies.js';
-import { ESI_TOKEN_MANAGER } from './esi-token-manager.provider.js';
+} from '@Infra/adapters/services/auth-cookies.service.js';
+import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
 
 @Injectable()
 export class AuthService {

@@ -2,7 +2,7 @@ import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
   LOCATION_CATALOG,
   type LocationCatalog,
-} from '@App/ports/location-catalog.port.js';
+} from '@Domain/ports/location-catalog.port.js';
 import type { SpaceLocation } from '@Domain/spacelocation/space-location.js';
 import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
 

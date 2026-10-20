@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ProcessedNodeRecord, ProcessedNodeStore } from './processed-node.store.js';
+import { ProcessedNodeRecord, ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
 
 @Injectable()
 export class InMemoryProcessedNodeStore extends ProcessedNodeStore {

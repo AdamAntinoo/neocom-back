@@ -1,9 +1,9 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { BlueprintListService } from './blueprint-list.service.js';
-import { InMemoryProcessedNodeStore } from './in-memory-processed-node.store.js';
-import { EnrichmentQueueService } from './enrichment-queue.service.js';
-import { SseFanoutService } from './sse-fanout.service.js';
 import { ConfigService } from '@nestjs/config';
+import { InMemoryProcessedNodeStore } from '@Outbound/persistence/in-memory-processed-node.store.js';
+import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
+import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
+import { BlueprintListService } from './blueprint-list.service.js';
 
 describe('BlueprintListService', () => {
   let store: InMemoryProcessedNodeStore;

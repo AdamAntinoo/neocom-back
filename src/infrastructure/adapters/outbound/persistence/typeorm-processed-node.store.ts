@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, Repository } from 'typeorm';
+import { ProcessedNodeRecord, ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
 import { ProcessedNodeEntity } from './processed-node.entity.js';
-import { ProcessedNodeRecord, ProcessedNodeStore } from './processed-node.store.js';
 
 @Injectable()
 export class TypeOrmProcessedNodeStore extends ProcessedNodeStore {
