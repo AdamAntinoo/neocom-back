@@ -5,7 +5,7 @@ info:
   description: |
     # Pilot
 
-    `GET /v1/pilots/{pilotId}` returns `PilotV1Dto`.
+    `GET /v1/pilots/{pilotId}` returns `PublicPilotV1` when anonymous, or `PilotV2` when logged in (neocom-domain models; no generated DTOs).
 
     The controller returns that DTO. Failures are thrown and written by an upper layer as `NeocomError`.
 
@@ -23,9 +23,9 @@ info:
 
     ### 2026-10-14 — NeocomError responses
 
-    - Success stays `PilotV1Dto`.
+    - Success stays `PilotV2`.
     - **400** — `pilotId` is not an integer (`INVALID_REQUEST`).
-    - **404** — no pilot for that identifier (`PILOT_NOT_FOUND`).
+    - **404** — no pilot for that identifier (`NOT_FOUND`).
     - **500** — the pilot source is not available (`INTERNAL_SERVER_ERROR`).
     - Error bodies use `NeocomError`.
 
@@ -33,14 +33,14 @@ info:
 
     Every interchange schema ends with `V1Dto`:
 
-    - `PilotDto` is `PilotV1Dto`
-    - `PublicCorporationV1` is `PublicCorporationV1Dto`
+    - `PilotDto` is `PilotV2`
+    - `PublicCorporationV1` is `PublicCorporationSummary`
     - `Station` is `StationV1Dto`
-    - `AllianceV1` is `AllianceV1Dto`
-    - `UniverseRaceData` is `UniverseRaceDataV1Dto`
-    - `UniverseAncestryData` is `UniverseAncestryDataV1Dto`
-    - `UniverseBloodlineData` is `UniverseBloodlineDataV1Dto`
-    - `SpaceLocationV1` is `SpaceLocationV1Dto`
+    - `AllianceV1` is `PilotAllianceSummary`
+    - `UniverseRaceData` is `PilotNameSummary`
+    - `UniverseAncestryData` is `PilotNameSummary`
+    - `UniverseBloodlineData` is `PilotNameSummary`
+    - `SpaceLocationV1` is `SpaceLocationV1`
 
     ### 2026-10-14 — Version prefix
 
@@ -63,7 +63,7 @@ paths:
         The header value is not validated here.
 
         **Response semantics:**
-        * **200** — `PilotV1Dto`.
+        * **200** — `PilotV2`.
         * **400** — `pilotId` is not an integer.
         * **404** — no pilot exists for `pilotId`.
         * **500** — the pilot source is not available.
@@ -79,14 +79,13 @@ paths:
       responses:
         "200":
           description: |
-            `PilotV1Dto`, a JSON view of the Pilot model.
-
-            Public fields are always present when known. Private fields are
-            included only when the caller is logged in.
+            `PublicPilotV1` when anonymous; `PilotV2` when logged in (`neocom-domain`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PilotV1Dto"
+                oneOf:
+                  - $ref: "#/components/schemas/PublicPilotV1"
+                  - $ref: "#/components/schemas/PilotV2"
         "400":
           $ref: "#/components/responses/BadRequestResponse"
         "404":
@@ -95,43 +94,71 @@ paths:
           $ref: "#/components/responses/InternalServerErrorResponse"
 components:
   schemas:
-    PilotV1Dto:
+    PilotV2:
+      allOf:
+        - $ref: "#/components/schemas/PublicPilotV1"
+        - type: object
+          description: |
+            Authenticated pilot (`neocom-domain` PilotV2). Includes private fields.
+          properties:
+            jsonClass:
+              type: string
+              enum: [PilotV2]
+            totalSkillpoints:
+              type: number
+            walletBalance:
+              type: number
+            currentShipName:
+              type: string
+            currentShipTypeName:
+              type: string
+            lastKnownLocation:
+              $ref: "#/components/schemas/SpaceLocationV1"
+            alliance:
+              $ref: "#/components/schemas/PilotAllianceSummary"
+    PublicCorporationSummary:
       type: object
       description: |
-        Public pilot fields, plus private fields when the caller is logged in.
-
-        **Public**
-
-        - `pilotId` (required)
-        - `name`
-        - `corporation`
-        - `birthday`
-        - `description`
-        - `gender`
-        - `securityStatus`
-        - `url4Icon`
-        - `raceData`
-        - `ancestryData`
-        - `bloodlineData`
-
-        **Private** — omitted when the caller is not logged in
-
-        - `totalSkillpoints`
-        - `walletBalance`
-        - `currentShipName`
-        - `currentShipTypeName`
-        - `lastKnownLocation`
+        Public corporation summary on a pilot (`neocom-domain`).
+      properties:
+        corporationId:
+          type: number
+        name:
+          type: string
+    PilotAllianceSummary:
+      type: object
+      description: |
+        Alliance summary on authenticated pilot (`neocom-domain`).
+      properties:
+        allianceId:
+          type: number
+        name:
+          type: string
+    PilotNameSummary:
+      type: object
+      description: |
+        Named race / ancestry / bloodline summary (`neocom-domain`).
+      properties:
+        name:
+          type: string
+          required: true
+    PublicPilotV1:
+      type: object
+      description: |
+        Public-only pilot (`neocom-domain`). Returned when the caller is not logged in.
       required:
         - pilotId
+        - jsonClass
       properties:
+        jsonClass:
+          type: string
+          enum: [PublicPilotV1]
         pilotId:
           type: number
-          description: >
-            Pilot identifier.
         name:
           type: string
         corporation:
-          $ref: "#/components/schemas/PublicCorporationV1Dto"
+          $ref: "#/components/schemas/PublicCorporationSummary"
         birthday:
           type: string
         description:
@@ -143,121 +170,15 @@ components:
         url4Icon:
           type: string
         raceData:
-          $ref: "#/components/schemas/UniverseRaceDataV1Dto"
+          $ref: "#/components/schemas/PilotNameSummary"
         ancestryData:
-          $ref: "#/components/schemas/UniverseAncestryDataV1Dto"
+          $ref: "#/components/schemas/PilotNameSummary"
         bloodlineData:
-          $ref: "#/components/schemas/UniverseBloodlineDataV1Dto"
-        totalSkillpoints:
-          type: number
-          description: |
-            Private. Omitted when the caller is not logged in.
-        walletBalance:
-          type: number
-          description: |
-            Private. Omitted when the caller is not logged in.
-        currentShipName:
-          type: string
-          description: |
-            Private. Omitted when the caller is not logged in.
-        currentShipTypeName:
-          type: string
-          description: |
-            Private. Omitted when the caller is not logged in.
-        lastKnownLocation:
-          $ref: "#/components/schemas/SpaceLocationV1Dto"
-    PublicCorporationV1Dto:
+          $ref: "#/components/schemas/PilotNameSummary"
+    SpaceLocationV1:
       type: object
       description: |
-        Public corporation data attached to a pilot.
-      properties:
-        corporationId:
-          type: number
-        name:
-          type: string
-        ceoid:
-          type: number
-        creatorId:
-          type: number
-        dateFounded:
-          type: string
-        description:
-          type: string
-        homeStation:
-          $ref: "#/components/schemas/StationV1Dto"
-        memberCount:
-          type: number
-        shares:
-          type: number
-        taxRate:
-          type: number
-        ticker:
-          type: string
-        url4Icon:
-          type: string
-        allianceId:
-          type: number
-        alliance:
-          $ref: "#/components/schemas/AllianceV1Dto"
-    StationV1Dto:
-      type: object
-      description: |
-        The `StationV1Dto` schema declares **no fields**.
-    AllianceV1Dto:
-      type: object
-      description: |
-        Alliance attached to a corporation.
-
-        Defaults:
-
-        | Field | Default |
-        | --- | --- |
-        | `allianceId` | `-5` |
-        | `name` | `-NAME-` |
-        | `ticker` | `TICK` |
-      properties:
-        allianceId:
-          type: number
-          default: -5
-        name:
-          type: string
-          default: "-NAME-"
-        ticker:
-          type: string
-          default: TICK
-        url4Icon:
-          type: string
-    UniverseRaceDataV1Dto:
-      type: object
-      description: |
-        Race data for a pilot.
-      properties:
-        allianceId:
-          type: number
-        description:
-          type: string
-        name:
-          type: string
-        raceId:
-          type: number
-    UniverseAncestryDataV1Dto:
-      type: object
-      description: |
-        Ancestry data for a pilot.
-      properties:
-        name:
-          type: string
-    UniverseBloodlineDataV1Dto:
-      type: object
-      description: |
-        Bloodline data for a pilot.
-      properties:
-        name:
-          type: string
-    SpaceLocationV1Dto:
-      type: object
-      description: |
-        The `SpaceLocationV1Dto` model declares **no fields**.
+        Space location lookup (`neocom-domain` SpaceLocationV1).
 
     ErrorsInner:
       description: |
@@ -269,7 +190,7 @@ components:
       properties:
         code:
           type: string
-          example: "PILOT_NOT_FOUND"
+          example: "NOT_FOUND"
         description:
           type: string
           example: "No pilot exists for this identifier."
@@ -298,7 +219,7 @@ components:
             Optional correlation trace identifier when the upper layer has one.
       example:
         errors:
-          - code: "PILOT_NOT_FOUND"
+          - code: "NOT_FOUND"
             description: "No pilot exists for this identifier."
             field: "pilotId"
             container: "path"
@@ -334,7 +255,7 @@ components:
               summary: Unknown pilot identifier
               value:
                 errors:
-                  - code: "PILOT_NOT_FOUND"
+                  - code: "NOT_FOUND"
                     description: "No pilot exists for this identifier."
                     field: "pilotId"
                     container: "path"

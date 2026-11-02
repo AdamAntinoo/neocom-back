@@ -1,0 +1,848 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+    "name": "NEOCOM Back",
+    "description": "Unique neocom-back collection for every HTTP endpoint currently served by the Nest app, aligned with OpenAPI under tools/openapi/ and ExceptionCatalog outcomes.\n\n**Specs covered**\n- `pilot-service-v0.1.0.yaml` \u2014 GET /v1/pilots/{pilotId}\n- `industry-service-v0.1.0.yaml` \u2014 GET /v1/pilots/{pilotId}/blueprints\n- Auth \u2014 POST /v1/auth/callback + TOKEN_UNAVAILABLE via access-cookie middleware\n- **OAuth2 \u2014 EVE SSO (real ESI)** \u2014 authorize URL, code exchange, cookie session, authenticated calls\n\n**Not included:** `gateway-adapter-service-v0.2.0.yaml` (legacy / not a neocom-back route).\n\nError bodies use NeocomError: `{ errors: [{ code, description, field?, container?, value? }], traceId? }`.\n\nUse the **NEOCOM local** environment. For real ESI: run the OAuth2 folder (or bind an existing tokens.json character).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "pilotId",
+      "value": "93813310"
+    },
+    {
+      "key": "unknownPilotId",
+      "value": "1"
+    },
+    {
+      "key": "invalidPilotId",
+      "value": "not-a-number"
+    },
+    {
+      "key": "authorization",
+      "value": "present"
+    },
+    {
+      "key": "authCode",
+      "value": ""
+    },
+    {
+      "key": "authState",
+      "value": "test-state"
+    },
+    {
+      "key": "ssoStateCookie",
+      "value": "test-state"
+    },
+    {
+      "key": "mismatchedAuthState",
+      "value": "wrong-state"
+    },
+    {
+      "key": "invalidAccessCookie",
+      "value": "expired|Pilot|1"
+    },
+    {
+      "key": "eveAuthorizeHost",
+      "value": "https://login.eveonline.com/v2/oauth/authorize/"
+    },
+    {
+      "key": "esiSsoClientId",
+      "value": "4664722d6bd0415683a04519e738a5fc"
+    },
+    {
+      "key": "esiSsoClientSecret",
+      "value": ""
+    },
+    {
+      "key": "esiSsoCallbackUrl",
+      "value": "http://localhost:6001/app/login-callback"
+    },
+    {
+      "key": "eveScopes",
+      "value": "esi-location.read_ship_type.v1 esi-wallet.read_character_wallet.v1 esi-universe.read_structures.v1 esi-ui.write_waypoint.v1 esi-characters.read_fw_stats.v1 esi-characters.read_freelance_jobs.v1 esi-activities.read_character.v1 esi-access.read_lists.v1 esi.activity.char:read esi.cosmetic.char:read publicData esi-location.read_location.v1 esi-wallet.read_corporation_wallet.v1 esi-search.search_structures.v1 esi-characters.read_contacts.v1 esi-assets.read_assets.v1 esi-planets.manage_planets.v1 esi-ui.open_window.v1 esi-characters.write_contacts.v1 esi-markets.structure_markets.v1 esi-characters.read_loyalty.v1 esi-characters.read_chat_channels.v1 esi-characters.read_medals.v1 esi-characters.read_standings.v1 esi-characters.read_agents_research.v1 esi-industry.read_character_jobs.v1 esi-markets.read_character_orders.v1 esi-characters.read_blueprints.v1 esi-characters.read_corporation_roles.v1 esi-location.read_online.v1 esi-characters.read_fatigue.v1 esi-wallet.read_corporation_wallets.v1 esi-characters.read_notifications.v1 esi-assets.read_corporation_assets.v1 esi-industry.read_corporation_jobs.v1 esi-markets.read_corporation_orders.v1 esi-industry.read_character_mining.v1 esi-industry.read_corporation_mining.v1 esi-planets.read_customs_offices.v1 esi-characters.read_titles.v1 esi-alliances.read_contacts.v1"
+    },
+    {
+      "key": "authorizeUrl",
+      "value": ""
+    },
+    {
+      "key": "neocomAccessCookie",
+      "value": ""
+    },
+    {
+      "key": "characterId",
+      "value": "92002067"
+    },
+    {
+      "key": "characterName",
+      "value": "Adam Antinoo"
+    },
+    {
+      "key": "sessionPlaceholder",
+      "value": "pending-refresh"
+    },
+    {
+      "key": "ssoRedirectUrl",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-level helpers are inlined per request for Postman/Newman compatibility."
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "OAuth2 \u2014 EVE SSO (real ESI)",
+      "description": "Real ESI login for Postman.\n\n**Fast path:** run **00** if tokens.json already has your character.\n\n**Fresh login:** select NEOCOM local \u2192 back up, front stopped \u2192 **01** (Visualize) \u2192 browser \u2192 paste callback URL into ssoRedirectUrl \u2192 **02** \u2192 **03/04**.",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "00 Bind stored ESI session (skip login)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "neocom_access={{sessionPlaceholder}}|{{characterName}}|{{characterId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/pilots/{{characterId}}",
+            "description": "Use when tokens.json already has a character. Skips EVE authorize. Set characterId/characterName to match tokens.json."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.environment.get('characterId') || pm.collectionVariables.get('characterId') || '').toString().trim();",
+                  "const name = (pm.environment.get('characterName') || pm.collectionVariables.get('characterName') || 'Pilot').toString().trim();",
+                  "if (!id) throw new Error('Set characterId to a key from neocom-back/tokens.json');",
+                  "pm.environment.set('sessionPlaceholder', 'pending-refresh');",
+                  "pm.environment.set('characterName', name);",
+                  "pm.environment.set('pilotId', id);",
+                  "pm.collectionVariables.set('characterName', name);",
+                  "pm.collectionVariables.set('pilotId', id);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200 (session bound)', () => pm.response.to.have.status(200));",
+                  "let access = pm.cookies.toObject().neocom_access;",
+                  "if (!access) {",
+                  "  const raw = pm.response.headers.all().filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value).find(v => v.startsWith('neocom_access='));",
+                  "  if (raw) access = decodeURIComponent(raw.split(';')[0].slice('neocom_access='.length));",
+                  "}",
+                  "pm.test('neocom_access refreshed', () => pm.expect(access).to.be.ok);",
+                  "if (access) { pm.environment.set('neocomAccessCookie', access); pm.collectionVariables.set('neocomAccessCookie', access); }",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('pilotId', String(body.pilotId || pm.environment.get('characterId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01 Build authorize URL",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+            "description": "Builds the EVE authorize URL locally. Ping to the back only so scripts run. Open Visualize/Console, then open the URL in an external browser. Keep neocom-front STOPPED; copy the failed localhost:6001 callback URL into ssoRedirectUrl."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function read(key, fallback) {",
+                  "  const v = pm.environment.get(key) || pm.collectionVariables.get(key);",
+                  "  return (v == null || v === '' ? fallback : v).toString();",
+                  "}",
+                  "function write(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  try { pm.environment.set(key, value); } catch (e) {}",
+                  "}",
+                  "if (!pm.environment.name) {",
+                  "  console.warn('No Postman environment selected \u2014 select NEOCOM local so ssoRedirectUrl persists.');",
+                  "}",
+                  "const bytes = new Uint8Array(24);",
+                  "for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);",
+                  "let binary = '';",
+                  "for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);",
+                  "const state = btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');",
+                  "let host = read('eveAuthorizeHost', 'https://login.eveonline.com/v2/oauth/authorize/');",
+                  "host = host.replace(/\\?$/, '');",
+                  "if (!host.endsWith('/')) host += '/';",
+                  "const clientId = read('esiSsoClientId', '');",
+                  "const redirectUri = read('esiSsoCallbackUrl', '');",
+                  "const scope = read('eveScopes', '');",
+                  "if (!clientId || !redirectUri || !scope) {",
+                  "  throw new Error('Missing esiSsoClientId / esiSsoCallbackUrl / eveScopes \u2014 select NEOCOM local environment.');",
+                  "}",
+                  "const q = [",
+                  "  'response_type=code',",
+                  "  'redirect_uri=' + encodeURIComponent(redirectUri),",
+                  "  'client_id=' + encodeURIComponent(clientId),",
+                  "  'scope=' + encodeURIComponent(scope),",
+                  "  'state=' + encodeURIComponent(state),",
+                  "].join('&');",
+                  "const authorizeUrl = host + '?' + q;",
+                  "write('authState', state);",
+                  "write('ssoStateCookie', state);",
+                  "write('authorizeUrl', authorizeUrl);",
+                  "write('authCode', '');",
+                  "write('ssoRedirectUrl', '');",
+                  "console.log('=== EVE AUTHORIZE URL (open in external browser) ===');",
+                  "console.log(authorizeUrl);",
+                  "console.log('state=', state);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const url = pm.collectionVariables.get('authorizeUrl') || pm.environment.get('authorizeUrl');",
+                  "const state = pm.collectionVariables.get('authState') || pm.environment.get('authState');",
+                  "pm.test('authorizeUrl ready', () => {",
+                  "  pm.expect(url, 'authorizeUrl').to.include('login.eveonline.com');",
+                  "  pm.expect(url).to.include('response_type=code');",
+                  "  pm.expect(state).to.be.a('string').that.is.not.empty;",
+                  "});",
+                  "pm.visualizer.set(",
+                  "  '<div style=\"font-family:sans-serif;line-height:1.4\">' +",
+                  "  '<h2>1. Open authorize URL</h2>' +",
+                  "  '<p><a href=\"' + url + '\" target=\"_blank\" rel=\"noopener\">Click to open EVE SSO</a></p>' +",
+                  "  '<textarea style=\"width:100%;height:90px\">' + url + '</textarea>' +",
+                  "  '<h2>2. After login</h2>' +",
+                  "  '<ol>' +",
+                  "  '<li>Keep <b>neocom-front stopped</b> (port 6001).</li>' +",
+                  "  '<li>Browser will show connection refused on login-callback \u2014 OK.</li>' +",
+                  "  '<li>Copy the <b>full address-bar URL</b> into env <code>ssoRedirectUrl</code>.</li>' +",
+                  "  '<li>Run request <b>02 Exchange code via back</b>.</li>' +",
+                  "  '</ol>' +",
+                  "  '<p>state = <code>' + state + '</code></p>' +",
+                  "  '</div>'",
+                  ");",
+                  "console.log(url);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Exchange code via back",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "neocom_sso_state={{authState}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{authCode}}\",\n  \"state\": \"{{authState}}\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/auth/callback",
+            "description": "Paste full callback URL into env ssoRedirectUrl first. Pre-request parses code/state and forces matching cookie."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function read(key) { return (pm.environment.get(key) || pm.collectionVariables.get(key) || '').toString().trim(); }",
+                  "function write(key, value) { pm.collectionVariables.set(key, value); try { pm.environment.set(key, value); } catch (e) {} }",
+                  "let code = read('authCode');",
+                  "let state = read('authState');",
+                  "const redirect = read('ssoRedirectUrl');",
+                  "if (!redirect && !code) {",
+                  "  throw new Error('Set env ssoRedirectUrl to the full browser callback URL (\u2026/login-callback?code=\u2026&state=\u2026), then Send again.');",
+                  "}",
+                  "if (redirect) {",
+                  "  let u; try { u = new URL(redirect); } catch (e) { throw new Error('ssoRedirectUrl is not a valid URL: ' + redirect); }",
+                  "  if (u.searchParams.get('code')) code = u.searchParams.get('code');",
+                  "  if (u.searchParams.get('state')) state = u.searchParams.get('state');",
+                  "}",
+                  "if (!code) throw new Error('No authorization code found. The callback URL must include ?code=');",
+                  "if (!state) throw new Error('No state found. The callback URL must include &state=');",
+                  "write('authCode', code);",
+                  "write('authState', state);",
+                  "write('ssoStateCookie', state);",
+                  "const headers = pm.request.headers;",
+                  "if (headers.has('Cookie')) headers.remove('Cookie');",
+                  "headers.upsert({ key: 'Cookie', value: 'neocom_sso_state=' + state });",
+                  "pm.request.body.update(JSON.stringify({ code: code, state: state }));",
+                  "console.log('POST /v1/auth/callback codeLen=', code.length, 'state=', state);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code !== 200) console.error(pm.response.text());",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('character returned', () => { pm.expect(body.characterId).to.be.a('number'); pm.expect(body.characterName).to.be.a('string').that.is.not.empty; });",
+                  "let access = pm.cookies.toObject().neocom_access;",
+                  "if (!access) {",
+                  "  const raw = pm.response.headers.all().filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value).find(v => v.startsWith('neocom_access='));",
+                  "  if (raw) access = decodeURIComponent(raw.split(';')[0].slice('neocom_access='.length));",
+                  "}",
+                  "pm.test('neocom_access cookie captured', () => pm.expect(access).to.be.ok);",
+                  "if (access) { pm.environment.set('neocomAccessCookie', access); pm.collectionVariables.set('neocomAccessCookie', access); }",
+                  "pm.environment.set('characterId', String(body.characterId));",
+                  "pm.environment.set('characterName', body.characterName);",
+                  "pm.environment.set('pilotId', String(body.characterId));",
+                  "pm.collectionVariables.set('characterId', String(body.characterId));",
+                  "pm.collectionVariables.set('characterName', body.characterName);",
+                  "pm.collectionVariables.set('pilotId', String(body.characterId));",
+                  "try { pm.environment.unset('ssoRedirectUrl'); pm.environment.unset('authCode'); } catch (e) {}",
+                  "console.log('Logged in as', body.characterName, body.characterId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Authenticated \u2014 GET pilot",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "neocom_access={{neocomAccessCookie}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{authorization}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+            "description": "Uses neocom_access from 00/02."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('jsonClass is PilotV2', () => pm.expect(pm.response.json().jsonClass).to.eql('PilotV2'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Authenticated \u2014 GET blueprints",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "neocom_access={{neocomAccessCookie}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/blueprints",
+            "description": "Blueprints with session cookie."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array body', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pilot \u2014 GET /v1/pilots/{pilotId}",
+      "description": "OpenAPI: tools/openapi/pilot-service-v0.1.0.yaml\nOutcomes: 200 PublicPilotV1 | 200 PilotV2 | 400 INVALID_REQUEST | 404 NOT_FOUND | 500 INTERNAL_SERVER_ERROR (PILOT_SOURCE_UNAVAILABLE).",
+      "item": [
+        {
+          "name": "200 \u2014 PublicPilotV1 (anonymous)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+            "description": "No Authorization header. Expect PublicPilotV1; private PilotV2 fields omitted."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('jsonClass is PublicPilotV1', () => pm.expect(body.jsonClass).to.eql('PublicPilotV1'));",
+                  "pm.test('returns requested pilotId', () => pm.expect(body.pilotId).to.eql(Number(pm.variables.get('pilotId'))));",
+                  "pm.test('omits private PilotV2 fields', () => {",
+                  "  ['totalSkillpoints','walletBalance','currentShipName','currentShipTypeName','lastKnownLocation'].forEach((k) => {",
+                  "    pm.expect(body).to.not.have.property(k);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "200 \u2014 PilotV2 (logged in)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{authorization}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+            "description": "Any non-empty Authorization marks the caller logged in (value is not validated as a token). Expect PilotV2 when the source has private fields."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('jsonClass is PilotV2', () => pm.expect(body.jsonClass).to.eql('PilotV2'));",
+                  "pm.test('returns requested pilotId', () => pm.expect(body.pilotId).to.eql(Number(pm.variables.get('pilotId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 \u2014 INVALID_REQUEST (pilotId not integer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{invalidPilotId}}",
+            "description": "ExceptionCatalog.INVALID_PILOT_ID \u2192 HTTP 400, code INVALID_REQUEST."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError INVALID_REQUEST on pilotId', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('INVALID_REQUEST');",
+                  "  pm.expect(body.errors[0].description).to.eql('pilotId must be an integer.');",
+                  "  pm.expect(body.errors[0].field).to.eql('pilotId');",
+                  "  pm.expect(body.errors[0].container).to.eql('path');",
+                  "  pm.expect(body.errors[0].value).to.eql(pm.variables.get('invalidPilotId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 \u2014 NOT_FOUND (unknown pilot)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{unknownPilotId}}",
+            "description": "ExceptionCatalog.NOT_FOUND when ESI returns not-found for the character. Use a pilotId ESI does not know (default unknownPilotId=1)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError NOT_FOUND', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('NOT_FOUND');",
+                  "  pm.expect(body.errors[0].field).to.eql('pilotId');",
+                  "  pm.expect(body.errors[0].container).to.eql('path');",
+                  "  pm.expect(body.errors[0].value).to.eql(String(pm.variables.get('unknownPilotId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "500 \u2014 PILOT_SOURCE_UNAVAILABLE",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+            "description": "ExceptionCatalog.PILOT_SOURCE_UNAVAILABLE when ESI is network/server-error. Only returns 500 when the pilot source fails \u2014 leave disabled in happy-path runs, or break ESI connectivity to exercise."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 500 when source unavailable', () => pm.response.to.have.status(500));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError INTERNAL_SERVER_ERROR', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('INTERNAL_SERVER_ERROR');",
+                  "  pm.expect(body.errors[0].description).to.eql('The pilot source is not available.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Industry \u2014 GET /v1/pilots/{pilotId}/blueprints",
+      "description": "OpenAPI: tools/openapi/industry-service-v0.1.0.yaml\nOutcomes: 200 BlueprintV1[] | 400 INVALID_REQUEST | 401 (OpenAPI / access cookie) | 404 NOT_FOUND | 500 INTERNAL_SERVER_ERROR (ESI_INDUSTRY_UNAVAILABLE).",
+      "item": [
+        {
+          "name": "200 \u2014 BlueprintV1[]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/blueprints",
+            "description": "List of BlueprintV1 for the pilot. Requires ESI to answer for that character (auth cookie may be needed depending on ESI client config)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('body is BlueprintV1 array', () => {",
+                  "  pm.expect(body).to.be.an('array');",
+                  "  if (body.length > 0) {",
+                  "    pm.expect(body[0].jsonClass).to.eql('BlueprintV1');",
+                  "    pm.expect(body[0]).to.have.property('blueprintId');",
+                  "    pm.expect(body[0]).to.have.property('blueprintTypeId');",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 \u2014 INVALID_REQUEST (pilotId not integer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{invalidPilotId}}/blueprints",
+            "description": "ExceptionCatalog.INVALID_PILOT_ID \u2192 HTTP 400, code INVALID_REQUEST."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError INVALID_REQUEST on pilotId', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('INVALID_REQUEST');",
+                  "  pm.expect(body.errors[0].description).to.eql('pilotId must be an integer.');",
+                  "  pm.expect(body.errors[0].field).to.eql('pilotId');",
+                  "  pm.expect(body.errors[0].container).to.eql('path');",
+                  "  pm.expect(body.errors[0].value).to.eql(pm.variables.get('invalidPilotId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "401 \u2014 TOKEN_UNAVAILABLE (invalid access cookie)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "neocom_access={{invalidAccessCookie}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/blueprints",
+            "description": "OpenAPI documents 401 when authenticated ESI access is required/missing. Runtime path: AccessCookieMiddleware \u2192 ExceptionCatalog.TOKEN_UNAVAILABLE when neocom_access is present but cannot be refreshed."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError TOKEN_UNAVAILABLE', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('TOKEN_UNAVAILABLE');",
+                  "  pm.expect(body.errors[0].description).to.eql('The access token could not be replaced.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 \u2014 NOT_FOUND (no blueprints / unknown pilot)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{unknownPilotId}}/blueprints",
+            "description": "ExceptionCatalog.NOT_FOUND when ESI reports not-found for character blueprints."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError NOT_FOUND', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('NOT_FOUND');",
+                  "  pm.expect(body.errors[0].field).to.eql('pilotId');",
+                  "  pm.expect(body.errors[0].container).to.eql('path');",
+                  "  pm.expect(body.errors[0].value).to.eql(String(pm.variables.get('unknownPilotId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "500 \u2014 ESI_INDUSTRY_UNAVAILABLE",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/blueprints",
+            "description": "ExceptionCatalog.ESI_INDUSTRY_UNAVAILABLE when ESI industry is network/server-error. Exercise by breaking ESI connectivity; skip in happy-path batch runs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 500 when ESI industry unavailable', () => pm.response.to.have.status(500));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError INTERNAL_SERVER_ERROR', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('INTERNAL_SERVER_ERROR');",
+                  "  pm.expect(body.errors[0].description).to.eql('ESI industry source is not available.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth \u2014 POST /v1/auth/callback",
+      "description": "Live endpoint (no OpenAPI file yet). Outcomes: 200 character summary | 400 SSO_STATE_MISMATCH. TOKEN_UNAVAILABLE (401) is exercised via access-cookie middleware on other routes (see Industry 401 request).",
+      "item": [
+        {
+          "name": "200 \u2014 exchange code (SSO success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "neocom_sso_state={{ssoStateCookie}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{authCode}}\",\n  \"state\": \"{{authState}}\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/auth/callback",
+            "description": "Requires a real EVE SSO authorization code in authCode, with authState matching the neocom_sso_state cookie. Sets neocom_access on success."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns characterId and characterName', () => {",
+                  "  pm.expect(body).to.have.property('characterId');",
+                  "  pm.expect(body).to.have.property('characterName');",
+                  "});",
+                  "const jar = pm.cookies.toObject();",
+                  "let access = jar.neocom_access;",
+                  "if (!access) {",
+                  "  const raw = pm.response.headers.all()",
+                  "    .filter((h) => h.key.toLowerCase() === 'set-cookie')",
+                  "    .map((h) => h.value)",
+                  "    .find((v) => v.startsWith('neocom_access='));",
+                  "  if (raw) access = decodeURIComponent(raw.split(';')[0].slice('neocom_access='.length));",
+                  "}",
+                  "pm.test('neocom_access cookie captured', () => pm.expect(access).to.be.ok);",
+                  "if (access) {",
+                  "  pm.environment.set('neocomAccessCookie', access);",
+                  "  pm.collectionVariables.set('neocomAccessCookie', access);",
+                  "}",
+                  "pm.environment.set('characterId', String(body.characterId));",
+                  "pm.environment.set('characterName', body.characterName);",
+                  "pm.environment.set('pilotId', String(body.characterId));",
+                  "pm.collectionVariables.set('characterId', String(body.characterId));",
+                  "pm.collectionVariables.set('characterName', body.characterName);",
+                  "pm.collectionVariables.set('pilotId', String(body.characterId));",
+                  "console.log('Logged in as', body.characterName, body.characterId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 \u2014 SSO_STATE_MISMATCH (state / cookie)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "neocom_sso_state={{ssoStateCookie}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"any-code\",\n  \"state\": \"{{mismatchedAuthState}}\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/auth/callback",
+            "description": "ExceptionCatalog.SSO_STATE_MISMATCH when body.state does not equal the neocom_sso_state cookie (or code/state missing)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError SSO_STATE_MISMATCH', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('SSO_STATE_MISMATCH');",
+                  "  pm.expect(body.errors[0].description).to.eql('The request state does not match. Caller not verified.');",
+                  "  pm.expect(body.errors[0].field).to.eql('state');",
+                  "  pm.expect(body.errors[0].container).to.eql('body');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 \u2014 SSO_STATE_MISMATCH (missing code)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "neocom_sso_state={{ssoStateCookie}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"{{authState}}\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/auth/callback",
+            "description": "Empty/missing code also fails the state verification gate \u2192 SSO_STATE_MISMATCH."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('NeocomError SSO_STATE_MISMATCH', () => {",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].code).to.eql('SSO_STATE_MISMATCH');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

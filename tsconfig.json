@@ -23,7 +23,8 @@
       "@App/*": ["./src/application/*"],
       "@Domain/*": ["./src/domain/*"],
       "@Infra/*": ["./src/infrastructure/*"],
-      "@Generated/*": ["./src/generated/*"]
+      "neocom-domain": ["../neocom-domain/dist/index"],
+      "neocom-domain/*": ["../neocom-domain/dist/*"]
     }
   }
 }

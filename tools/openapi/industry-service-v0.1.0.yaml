@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: NEOCOM Industry API
+  version: 0.1.0
+  description: |
+    # Industry
+
+    First endpoint: blueprints belonging to a pilot.
+
+    `GET /v1/pilots/{pilotId}/blueprints` returns an array of `BlueprintV1`
+    (domain model name — BACK-SVC-061).
+
+    Field mapping from ESI blueprints plus model-only fields (names, icons,
+    output type) is stated at group level; detailed ESI↔model map remains under review
+    (BACK-SVC-072).
+
+    ## Changelog
+
+    ### 2026-11-02 — Pilot blueprints
+
+    - `GET /v1/pilots/{pilotId}/blueprints` → `BlueprintV1[]`.
+paths:
+  /v1/pilots/{pilotId}/blueprints:
+    get:
+      operationId: getPilotBlueprints
+      summary: Pilot blueprints
+      description: |
+        Blueprints owned by the pilot. Response items are `BlueprintV1`.
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          description: Pilot unique identifier.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: List of `BlueprintV1`.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BlueprintV1"
+        "400":
+          description: "'pilotId' is not an integer."
+        "401":
+          description: Authenticated ESI access required and missing.
+        "404":
+          description: Pilot or blueprints not available.
+        "500":
+          description: Upstream ESI failure.
+components:
+  schemas:
+    BlueprintV1:
+      type: object
+      description: |
+        Domain model `BlueprintV1`. Schema name matches the domain model (BACK-SVC-061).
+        When this document disagrees with `neocom-domain` BlueprintV1, the domain model wins
+        (BACK-SVC-063).
+      required:
+        - jsonClass
+        - blueprintId
+        - blueprintTypeId
+      properties:
+        jsonClass:
+          type: string
+          example: BlueprintV1
+        blueprintId:
+          type: integer
+          format: int64
+          description: ESI item_id
+        blueprintTypeId:
+          type: integer
+          format: int32
+          description: ESI type_id
+        blueprintTypeName:
+          type: string
+        blueprintTypeIconURL:
+          type: string
+        outputTypeId:
+          type: integer
+          format: int32
+        outputTypeName:
+          type: string
+        outputTypeIconURL:
+          type: string
+        runs:
+          type: integer
+        materialEfficiency:
+          type: integer
+          minimum: 0
+          maximum: 10
+        timeEfficiency:
+          type: integer
+          minimum: 0
+          maximum: 20
+        maxRuns:
+          type: integer

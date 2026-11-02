@@ -1,8 +1,7 @@
+import { PilotV2, PublicPilotV1, type PilotPort } from 'neocom-domain';
 import { GetPilotUseCase } from './get-pilot.usecase.js';
-import type { PilotSource } from '@App/ports/pilot-source.port.js';
-import type { PilotV2 } from '@Domain/pilot/pilot.js';
 
-const pilot: PilotV2 = {
+const pilotFields = {
   pilotId: 93813310,
   name: 'Perico Tuerto',
   totalSkillpoints: 12,
@@ -13,28 +12,32 @@ const pilot: PilotV2 = {
 };
 
 describe('GetPilotUseCase', () => {
-  const source: PilotSource = {
-    findById: (pilotId: number) => Promise.resolve({ ...pilot, pilotId }),
+  const source: PilotPort = {
+    findById: (pilotId: number) => Promise.resolve(new PilotV2({ ...pilotFields, pilotId })),
   };
   const useCase = new GetPilotUseCase(source);
 
-  it('returns a PilotV1Dto for the pilot identifier and omits the private section when not logged in', async () => {
-    const dto = await useCase.execute(93813310, false);
-    expect(dto.pilotId).toBe(93813310);
-    expect(dto.name).toBe('Perico Tuerto');
-    expect(dto).not.toHaveProperty('totalSkillpoints');
-    expect(dto).not.toHaveProperty('walletBalance');
-    expect(dto).not.toHaveProperty('currentShipName');
-    expect(dto).not.toHaveProperty('currentShipTypeName');
-    expect(dto).not.toHaveProperty('lastKnownLocation');
+  it('returns PublicPilotV1 without private fields when not logged in', async () => {
+    const result = await useCase.execute(93813310, false);
+    expect(result).toBeInstanceOf(PublicPilotV1);
+    expect(result.getJsonClass()).toBe('PublicPilotV1');
+    expect(result.getPilotId()).toBe(93813310);
+    expect(result.getName()).toBe('Perico Tuerto');
+    expect(result).not.toHaveProperty('totalSkillpoints');
+    expect(result).not.toHaveProperty('walletBalance');
+    expect(result).not.toHaveProperty('currentShipName');
+    expect(result).not.toHaveProperty('currentShipTypeName');
+    expect(result).not.toHaveProperty('lastKnownLocation');
   });
 
-  it('includes the private section when logged in', async () => {
-    const dto = await useCase.execute(93813310, true);
-    expect(dto.totalSkillpoints).toBe(12);
-    expect(dto.walletBalance).toBe(34);
-    expect(dto.currentShipName).toBe('Venture');
-    expect(dto.currentShipTypeName).toBe('Venture');
-    expect(dto.lastKnownLocation).toEqual({});
+  it('returns PilotV2 with private fields when logged in', async () => {
+    const result = await useCase.execute(93813310, true);
+    expect(result).toBeInstanceOf(PilotV2);
+    expect(result.getJsonClass()).toBe('PilotV2');
+    const loggedIn = result as PilotV2;
+    expect(loggedIn.getTotalSkillpoints()).toBe(12);
+    expect(loggedIn.getWalletBalance()).toBe(34);
+    expect(loggedIn.getCurrentShipName()).toBe('Venture');
+    expect(loggedIn.getCurrentShipTypeName()).toBe('Venture');
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { formatAccessCookie, parseAccessCookie } from './auth-cookies.js';
-import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
+import { NeocomBackendError } from 'neocom-domain';
 
 describe('auth cookies', () => {
   it('formats and parses accessToken|characterName|characterId', () => {

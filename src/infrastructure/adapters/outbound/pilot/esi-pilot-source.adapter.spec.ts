@@ -1,7 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { EsiError } from '@lgriffin/esi.ts';
 import type { AllianceInfo, Ancestry, Bloodline, CharacterInfo, CorporationInfo, Race } from '@lgriffin/esi.ts';
-import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
+import { NeocomBackendError } from 'neocom-domain';
 import { readPilotFromEsi, type EsiPilotApi } from './esi-pilot-source.adapter.js';
 
 const info = {
@@ -79,35 +79,18 @@ describe('readPilotFromEsi', () => {
   it('maps public ESI character, corporation, portrait, and universe data onto the pilot', async () => {
     const pilot = await readPilotFromEsi(esi(() => Promise.resolve(info)), 93813310);
 
-    expect(pilot).toEqual({
-      pilotId: 93813310,
-      name: 'Perico Tuerto',
+    expect(pilot.getJsonClass()).toBe('PilotV2');
+    expect(pilot.getPilotId()).toBe(93813310);
+    expect(pilot.getName()).toBe('Perico Tuerto');
+    expect(pilot).toMatchObject({
       description: 'public',
       birthday: '2014-01-01T00:00:00Z',
       gender: 'male',
       securityStatus: 1.5,
       url4Icon: 'https://img/pilot',
-      corporation: {
-        corporationId: 98000001,
-        name: 'Corp',
-        ticker: 'CRP',
-        description: 'corp',
-        ceoid: 11,
-        creatorId: 12,
-        dateFounded: '2010-01-01T00:00:00Z',
-        memberCount: 3,
-        shares: 1000,
-        taxRate: 0.1,
-        url4Icon: 'https://img/corp',
-        allianceId: 99000001,
-        alliance: {
-          allianceId: 99000001,
-          name: 'Ally',
-          ticker: 'ALY',
-          url4Icon: 'https://img/ally',
-        },
-      },
-      raceData: { raceId: 2, name: 'Caldari', description: 'State', allianceId: 5 },
+      corporation: { corporationId: 98000001, name: 'Corp' },
+      alliance: { allianceId: 99000001, name: 'Ally' },
+      raceData: { name: 'Caldari' },
       ancestryData: { name: 'Merchandisers' },
       bloodlineData: { name: 'Deteis' },
     });
@@ -118,7 +101,7 @@ describe('readPilotFromEsi', () => {
       httpStatus: HttpStatus.NOT_FOUND,
       errors: [
         {
-          code: 'PILOT_NOT_FOUND',
+          code: 'NOT_FOUND',
           description: 'No pilot exists for this identifier.',
           field: 'pilotId',
           container: 'path',

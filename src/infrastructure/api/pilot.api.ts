@@ -1,5 +1,5 @@
-import type { PilotV1Dto } from '@Generated/pilot/model/pilot-v1-dto.js';
+import type { PilotV2, PublicPilotV1 } from 'neocom-domain';
 
 export interface PilotApi {
-  getPilot(pilotId: number): Promise<PilotV1Dto>;
+  getPilot(pilotId: number): Promise<PublicPilotV1 | PilotV2>;
 }
