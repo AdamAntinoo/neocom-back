@@ -6,6 +6,7 @@ import { LoggerMiddleware } from '@Infra/config/logger.middleware.js';
 import { NeocomBackendErrorFilter } from '@Infra/errors/neocom-backend-error.filter.js';
 import { PilotModule } from '@Infra/pilot.module.js';
 import { IndustryModule } from '@Infra/industry.module.js';
+import { SpaceLocationModule } from '@Infra/spacelocation.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { IndustryModule } from '@Infra/industry.module.js';
     AuthModule,
     PilotModule,
     IndustryModule,
+    SpaceLocationModule,
   ],
   providers: [LoggerMiddleware, { provide: APP_FILTER, useClass: NeocomBackendErrorFilter }],
 })
