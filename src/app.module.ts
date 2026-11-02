@@ -5,8 +5,7 @@ import { AuthModule } from '@Infra/auth/auth.module.js';
 import { LoggerMiddleware } from '@Infra/config/logger.middleware.js';
 import { NeocomBackendErrorFilter } from '@Infra/errors/neocom-backend-error.filter.js';
 import { PilotModule } from '@Infra/pilot.module.js';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { IndustryModule } from '@Infra/industry.module.js';
 
 @Module({
   imports: [
@@ -17,9 +16,9 @@ import { AppService } from './app.service.js';
     }),
     AuthModule,
     PilotModule,
+    IndustryModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, LoggerMiddleware, { provide: APP_FILTER, useClass: NeocomBackendErrorFilter }],
+  providers: [LoggerMiddleware, { provide: APP_FILTER, useClass: NeocomBackendErrorFilter }],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

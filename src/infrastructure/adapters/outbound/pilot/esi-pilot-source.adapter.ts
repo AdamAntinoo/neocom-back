@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import {
   EsiClient,
   isNetworkError,
@@ -13,9 +13,12 @@ import {
   type CorporationInfo,
   type Race,
 } from '@lgriffin/esi.ts';
-import type { PilotSource } from '@App/ports/pilot-source.port.js';
-import type { AllianceV1, PilotV2, PublicCorporationV1 } from '@Domain/pilot/pilot.js';
-import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
+import { PilotV2, type PilotPort } from 'neocom-domain';
+import type { AllianceV1, PublicCorporationV1 } from '@Domain/pilot/pilot.js';
+import {
+  ExceptionCatalog,
+  exceptionPayload,
+} from '@Infra/adapters/exceptions/index.js';
 
 type CorporationIcon = {
   px64x64?: string;
@@ -44,7 +47,7 @@ export interface EsiPilotApi {
 }
 
 @Injectable()
-export class EsiPilotSource implements PilotSource, OnModuleDestroy {
+export class EsiPilotSource implements PilotPort, OnModuleDestroy {
   private readonly esi = new EsiClient({ clientId: 'neocom-back' });
 
   findById(pilotId: number): Promise<PilotV2> {
@@ -69,23 +72,13 @@ export async function readPilotFromEsi(esi: EsiPilotApi, pilotId: number): Promi
     return toPilot(pilotId, info, portrait, corporation, races, ancestries, bloodlines);
   } catch (error) {
     if (isNotFound(error)) {
-      throw new NeocomBackendError(HttpStatus.NOT_FOUND, [
-        {
-          code: 'PILOT_NOT_FOUND',
-          description: 'No pilot exists for this identifier.',
-          field: 'pilotId',
-          container: 'path',
-          value: String(pilotId),
-        },
-      ]);
+      throw ExceptionCatalog.NOT_FOUND.doThrow(
+        'No pilot exists for this identifier.',
+        exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
+      );
     }
     if (isServerError(error) || isNetworkError(error)) {
-      throw new NeocomBackendError(HttpStatus.INTERNAL_SERVER_ERROR, [
-        {
-          code: 'INTERNAL_SERVER_ERROR',
-          description: 'The pilot source is not available.',
-        },
-      ]);
+      throw ExceptionCatalog.PILOT_SOURCE_UNAVAILABLE.doThrow();
     }
     throw error;
   }
@@ -151,7 +144,7 @@ function toPilot(
   const ancestry = info.ancestry_id === undefined ? undefined : ancestries.find((item) => item.id === info.ancestry_id);
   const bloodline = bloodlines.find((item) => item.bloodline_id === info.bloodline_id);
   const portraitUrl = iconUrl(portrait);
-  return {
+  return new PilotV2({
     pilotId,
     name: info.name,
     description: info.description,
@@ -159,16 +152,17 @@ function toPilot(
     gender: info.gender,
     securityStatus: info.security_status,
     ...(portraitUrl === undefined ? {} : { url4Icon: portraitUrl }),
-    corporation,
-    raceData: {
-      raceId: info.race_id,
-      ...(race === undefined
-        ? {}
-        : { name: race.name, description: race.description, allianceId: race.alliance_id }),
+    corporation: {
+      corporationId: corporation.corporationId,
+      name: corporation.name,
     },
+    alliance: corporation.alliance
+      ? { allianceId: corporation.alliance.allianceId, name: corporation.alliance.name }
+      : undefined,
+    raceData: race?.name === undefined ? undefined : { name: race.name },
     ...(ancestry === undefined ? {} : { ancestryData: { name: ancestry.name } }),
     ...(bloodline === undefined ? {} : { bloodlineData: { name: bloodline.name } }),
-  };
+  });
 }
 
 function iconUrl(icon?: {

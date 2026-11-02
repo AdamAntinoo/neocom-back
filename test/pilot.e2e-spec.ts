@@ -3,10 +3,9 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
-import { PILOT_SOURCE } from '@App/ports/pilot-source.port.js';
-import type { PilotV2 } from '@Domain/pilot/pilot.js';
+import { PILOT_PORT, PilotV2 } from 'neocom-domain';
 
-const pilot: PilotV2 = {
+const pilotFields = {
   pilotId: 93813310,
   name: 'Perico Tuerto',
   totalSkillpoints: 12,
@@ -23,9 +22,9 @@ describe('Pilot endpoint (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(PILOT_SOURCE)
+      .overrideProvider(PILOT_PORT)
       .useValue({
-        findById: (pilotId: number) => Promise.resolve({ ...pilot, pilotId }),
+        findById: (pilotId: number) => Promise.resolve(new PilotV2({ ...pilotFields, pilotId })),
       })
       .compile();
 
@@ -50,11 +49,12 @@ describe('Pilot endpoint (e2e)', () => {
       });
   });
 
-  it('GET /v1/pilots/:pilotId returns the PilotV1Dto without the private section when not logged in', () => {
+  it('GET /v1/pilots/:pilotId returns PublicPilotV1 without private fields when not logged in', () => {
     return request(app.getHttpServer())
       .get('/v1/pilots/93813310')
       .expect(200)
       .expect((response) => {
+        expect(response.body.jsonClass).toBe('PublicPilotV1');
         expect(response.body.pilotId).toBe(93813310);
         expect(response.body.name).toBe('Perico Tuerto');
         expect(response.body).not.toHaveProperty('totalSkillpoints');
@@ -65,12 +65,13 @@ describe('Pilot endpoint (e2e)', () => {
       });
   });
 
-  it('GET /v1/pilots/:pilotId includes the private section when an authorization header is present', () => {
+  it('GET /v1/pilots/:pilotId returns PilotV2 private fields when an authorization header is present', () => {
     return request(app.getHttpServer())
       .get('/v1/pilots/93813310')
       .set('Authorization', 'present')
       .expect(200)
       .expect((response) => {
+        expect(response.body.jsonClass).toBe('PilotV2');
         expect(response.body.totalSkillpoints).toBe(12);
         expect(response.body.walletBalance).toBe(34);
         expect(response.body.currentShipName).toBe('Venture');

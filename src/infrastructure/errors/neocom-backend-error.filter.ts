@@ -1,6 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import type { Response } from 'express';
-import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
+import { NeocomBackendError } from 'neocom-domain';
 
 @Catch(NeocomBackendError)
 export class NeocomBackendErrorFilter implements ExceptionFilter {

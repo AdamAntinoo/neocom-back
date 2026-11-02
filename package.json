@@ -9,8 +9,7 @@
   "imports": {
     "@App/*": "./dist/application/*",
     "@Domain/*": "./dist/domain/*",
-    "@Infra/*": "./dist/infrastructure/*",
-    "@Generated/*": "./dist/generated/*"
+    "@Infra/*": "./dist/infrastructure/*"
   },
   "scripts": {
     "build": "nest build",
@@ -22,13 +21,13 @@
     "start:prod": "node dist/main",
     "banner": "node scripts/generate-banner.mjs",
     "version:sync": "node scripts/sync-version.mjs",
+    "prepare": "git config core.hooksPath .githooks",
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "openapi:pilot": "openapi-generator generate -i tools/openapi/pilot-service-v0.1.0.yaml -g typescript-nestjs -o src/generated/pilot --additional-properties=fileNaming=kebab-case,withInterfaces=true,supportsES6=true,modelPropertyNaming=original,npmName=neocom-back-pilot-api,npmVersion=0.0.1 && node scripts/fix-generated-pilot-imports.mjs"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
   },
   "dependencies": {
     "@lgriffin/esi.ts": "^12.0.0",
@@ -37,6 +36,7 @@
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-express": "^12.0.1",
     "cookie-parser": "^1.4.7",
+    "neocom-domain": "file:../neocom-domain",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

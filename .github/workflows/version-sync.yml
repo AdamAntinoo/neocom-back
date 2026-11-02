@@ -1,0 +1,26 @@
+# Keep package version aligned with GitVersion MajorMinorPatch on each push.
+name: Version sync
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/**
+      - feat/**
+      - fix/**
+      - release/**
+
+concurrency:
+  group: version-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    uses: AdamAntinoo/neocom-meta/.github/workflows/version-sync.yml@feature/cicd
+    with:
+      node-version: 24.21.0
+    secrets: inherit

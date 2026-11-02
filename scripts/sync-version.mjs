@@ -17,19 +17,26 @@ if (!/^\d+\.\d+\.\d+$/.test(version)) {
 
 execFileSync('npm', ['pkg', 'set', `version=${version}`], { cwd: root, stdio: 'inherit' });
 
-function replaceInFile(relativePath, pattern, replacement) {
+function upsertVersionFile(relativePath, nextVersion) {
   const filePath = path.join(root, relativePath);
-  const before = readFileSync(filePath, 'utf8');
-  const after = before.replace(pattern, replacement);
-  if (after === before) {
-    console.error(`No match in ${relativePath} for ${pattern}`);
-    process.exit(1);
+  let before = '';
+  try {
+    before = readFileSync(filePath, 'utf8');
+  } catch {
+    writeFileSync(filePath, `VERSION=${nextVersion}\n`, 'utf8');
+    console.log(`Created ${relativePath}`);
+    return;
   }
-  writeFileSync(filePath, after, 'utf8');
+  if (/^VERSION=.*/m.test(before)) {
+    writeFileSync(filePath, before.replace(/^VERSION=.*/m, `VERSION=${nextVersion}`), 'utf8');
+  } else {
+    const prefix = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
+    writeFileSync(filePath, `${before}${prefix}VERSION=${nextVersion}\n`, 'utf8');
+  }
   console.log(`Updated ${relativePath}`);
 }
 
-replaceInFile('.env.version', /^VERSION=.*/m, `VERSION=${version}`);
+upsertVersionFile('.env.version', version);
 
 execFileSync(process.execPath, [path.join(root, 'scripts/generate-banner.mjs')], {
   cwd: root,

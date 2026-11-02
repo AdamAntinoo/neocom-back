@@ -1,7 +1,11 @@
 import { EsiTokenManager } from '@lgriffin/esi.ts';
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Response } from 'express';
-import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
+import type { NeocomBackendError } from 'neocom-domain';
+import {
+  ExceptionCatalog,
+  exceptionPayload,
+} from '@Infra/adapters/exceptions/index.js';
 import {
   clearLoginCookies,
   NEOCOM_SSO_STATE,
@@ -23,15 +27,9 @@ export class AuthService {
     res: Response,
   ): Promise<{ characterId: number; characterName: string }> {
     if (!code || !state || state !== ssoStateCookie) {
-      throw new NeocomBackendError(HttpStatus.BAD_REQUEST, [
-        {
-          code: 'SSO_STATE_MISMATCH',
-          description: 'The request state does not match. Caller not verified.',
-          field: 'state',
-          container: 'body',
-          value: state,
-        },
-      ]);
+      throw ExceptionCatalog.SSO_STATE_MISMATCH.doThrow(
+        exceptionPayload().field('state').container('body').value(state).build(),
+      );
     }
 
     const stored = await this.tokens.addCharacter(code);
@@ -72,12 +70,7 @@ export class AuthService {
 }
 
 function unauthorized(): NeocomBackendError {
-  return new NeocomBackendError(HttpStatus.UNAUTHORIZED, [
-    {
-      code: 'TOKEN_UNAVAILABLE',
-      description: 'The access token could not be replaced.',
-    },
-  ]);
+  return ExceptionCatalog.TOKEN_UNAVAILABLE.doThrow();
 }
 
 export { NEOCOM_SSO_STATE };

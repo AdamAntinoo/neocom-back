@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Sync package version from GitVersion MajorMinorPatch into the same commit.
+set -euo pipefail
+
+if [[ "${SKIP_VERSION_SYNC:-}" == "1" ]]; then
+  exit 0
+fi
+
+if ! command -v gitversion >/dev/null 2>&1; then
+  echo "pre-commit: gitversion not on PATH — skipping version:sync (CI hook will sync)." >&2
+  exit 0
+fi
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+npm run version:sync
+
+for path in package.json .env.version .app-banner.txt; do
+  if [[ -f "$path" ]]; then
+    git add -- "$path"
+  fi
+done
