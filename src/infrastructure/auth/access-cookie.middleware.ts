@@ -12,7 +12,12 @@ export class AccessCookieMiddleware implements NestMiddleware {
   constructor(private readonly auth: AuthService) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
-    if (req.path === '/v1/auth/callback' || req.originalUrl.startsWith('/v1/auth/callback')) {
+    if (
+      req.path === '/v1/auth/callback' ||
+      req.originalUrl.startsWith('/v1/auth/callback') ||
+      req.path === '/v1/auth/session' ||
+      req.originalUrl.startsWith('/v1/auth/session')
+    ) {
       next();
       return;
     }

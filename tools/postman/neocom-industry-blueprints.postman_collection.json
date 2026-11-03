@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "NEOCOM Industry Blueprints",
-    "description": "Manual checks for the async industry blueprint list (BASSE).\n\n- `GET /v1/pilots/{pilotId}/industry/blueprints` — HTTP list (partial/stale OK; enrichment continues in background).\n- `GET /v1/pilots/{pilotId}/industry/blueprints/events` — SSE stream (`text/event-stream`); events type `node-updated` with `{ nodeId, node }`.\n\nUse environment **NEOCOM local** (`baseUrl`, `pilotId`). Server: `npm run start:dev` in `neocom-back`. Persistence/Redis optional (`.env.async` + `npm run docker:up`); without them Nest uses in-memory store and in-process enrichment.",
+    "description": "Manual checks for the async manufacture blueprint list (BASSE).\n\n- `GET /v1/pilots/{pilotId}/manufacture/blueprints` \u2014 HTTP list (partial/stale OK; enrichment continues in background).\n- `GET /v1/pilots/{pilotId}/manufacture/blueprints/events` \u2014 SSE stream (`text/event-stream`); events type `node-updated` with `{ nodeId, node }`.\n\nAuth: log in via **neocom-front**, then run **Session \u2192 00 Load session from back** in `neocom-back.postman_collection.json` so `neocomAccessCookie` is set. Authenticated calls send that cookie.\n\nUse environment **NEOCOM local** (`baseUrl`, `pilotId`, `neocomAccessCookie`). Server: `npm run start:dev` in `neocom-back`. Persistence/Redis optional (`.env.async` + `npm run docker:up`).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,6 +12,14 @@
     {
       "key": "pilotId",
       "value": "93813310"
+    },
+    {
+      "key": "neocomAccessCookie",
+      "value": ""
+    },
+    {
+      "key": "authorization",
+      "value": "present"
     }
   ],
   "item": [
@@ -21,12 +29,20 @@
         "method": "GET",
         "header": [
           {
+            "key": "Cookie",
+            "value": "neocom_access={{neocomAccessCookie}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{authorization}}"
+          },
+          {
             "key": "Accept",
             "value": "application/json"
           }
         ],
-        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/industry/blueprints",
-        "description": "On persistence miss, Nest returns a simplified/partial list and starts background enrichment. Scaffold rows use `ready: false` and null calculated fields until enrichment finishes."
+        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/manufacture/blueprints",
+        "description": "On persistence miss, Nest returns a simplified/partial list and starts background enrichment. ESI rows use `ready: false` until enrichment and null calculated fields until enrichment finishes."
       },
       "event": [
         {
@@ -67,11 +83,19 @@
         "method": "GET",
         "header": [
           {
+            "key": "Cookie",
+            "value": "neocom_access={{neocomAccessCookie}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{authorization}}"
+          },
+          {
             "key": "Accept",
             "value": "application/json"
           }
         ],
-        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/industry/blueprints",
+        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/manufacture/blueprints",
         "description": "Repeat the list call. Should return persistence for the same pilot scope without requiring ESI again. After enrichment has run, some or all rows may show `ready: true` and filled calculated fields."
       },
       "event": [
@@ -88,7 +112,7 @@
               "    pm.expect(body).to.be.an('array');",
               "    pm.expect(body.length).to.be.above(0);",
               "});",
-              "pm.test('same scaffold blueprint ids still present', function () {",
+              "pm.test('same blueprint ids still present', function () {",
               "    const ids = body.map(function (r) { return r.blueprintId; });",
               "    pm.expect(ids).to.include(1001);",
               "    pm.expect(ids).to.include(1002);",
@@ -99,11 +123,11 @@
       ]
     },
     {
-      "name": "List blueprints — invalid pilotId",
+      "name": "List blueprints \u2014 invalid pilotId",
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{baseUrl}}/v1/pilots/not-a-number/industry/blueprints",
+        "url": "{{baseUrl}}/v1/pilots/not-a-number/manufacture/blueprints",
         "description": "ParseIntPipe rejects a non-integer pilotId (typically 400)."
       },
       "event": [
@@ -126,6 +150,14 @@
         "method": "GET",
         "header": [
           {
+            "key": "Cookie",
+            "value": "neocom_access={{neocomAccessCookie}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{authorization}}"
+          },
+          {
             "key": "Accept",
             "value": "text/event-stream"
           },
@@ -134,8 +166,8 @@
             "value": "no-cache"
           }
         ],
-        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/industry/blueprints/events",
-        "description": "Opens the Nest `@Sse()` stream for this pilot industry scope.\n\n**How to use:** Send this request first (leave it open if your Postman supports event streams), then run **List blueprints** in another tab so enrichment can publish `node-updated` events.\n\nEvent payload shape: `event: node-updated` with data `{\"nodeId\":\"…\",\"node\":{…}}`.\n\nClassic Postman may treat this as a long-lived response; Postman v10+ Event Stream / Newman may differ. curl alternative:\n`curl -N -H 'Accept: text/event-stream' '{{baseUrl}}/v1/pilots/{{pilotId}}/industry/blueprints/events'`"
+        "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/manufacture/blueprints/events",
+        "description": "Opens the Nest `@Sse()` stream for this pilot industry scope.\n\n**How to use:** Send this request first (leave it open if your Postman supports event streams), then run **List blueprints** in another tab so enrichment can publish `node-updated` events.\n\nEvent payload shape: `event: node-updated` with data `{\"nodeId\":\"\u2026\",\"node\":{\u2026}}`.\n\nClassic Postman may treat this as a long-lived response; Postman v10+ Event Stream / Newman may differ. curl alternative:\n`curl -N -H 'Accept: text/event-stream' '{{baseUrl}}/v1/pilots/{{pilotId}}/industry/blueprints/events'`"
       }
     },
     {

@@ -25,6 +25,7 @@ describe('AuthService', () => {
     addCharacter: vi.fn(),
     getToken: vi.fn(),
     getStoredToken: vi.fn(),
+    listCharacters: vi.fn(),
   };
   const res = {
     cookie: vi.fn(),
@@ -87,5 +88,52 @@ describe('AuthService', () => {
       expect(error).toBeInstanceOf(NeocomBackendError);
       expect((error as NeocomBackendError).httpStatus).toBe(HttpStatus.UNAUTHORIZED);
     }
+  });
+
+  it('binds a stored session from tokens.json for Postman', async () => {
+    tokens.listCharacters.mockResolvedValue([
+      { characterId: 99, characterName: 'Other' },
+      { characterId: 42, characterName: 'Pilot' },
+    ]);
+    tokens.getToken.mockResolvedValue('access-token');
+    tokens.getStoredToken.mockResolvedValue({ characterId: 42, characterName: 'Pilot' });
+
+    const payload = await service.bindStoredSession(42, res as never);
+
+    expect(payload).toEqual({
+      characterId: 42,
+      characterName: 'Pilot',
+      pilotId: 42,
+      cookieName: 'neocom_access',
+      neocomAccessCookie: 'access-token|Pilot|42',
+      authorization: 'present',
+      characters: [
+        { characterId: 99, characterName: 'Other' },
+        { characterId: 42, characterName: 'Pilot' },
+      ],
+    });
+    expect(res.cookie).toHaveBeenCalledWith(
+      'neocom_access',
+      'access-token|Pilot|42',
+      expect.objectContaining({ httpOnly: false }),
+    );
+  });
+
+  it('defaults bindStoredSession to the first stored character', async () => {
+    tokens.listCharacters.mockResolvedValue([{ characterId: 7, characterName: 'First' }]);
+    tokens.getToken.mockResolvedValue('tok');
+    tokens.getStoredToken.mockResolvedValue({ characterId: 7, characterName: 'First' });
+
+    const payload = await service.bindStoredSession(undefined, res as never);
+
+    expect(payload.characterId).toBe(7);
+    expect(payload.neocomAccessCookie).toBe('tok|First|7');
+  });
+
+  it('rejects bindStoredSession when storage is empty', async () => {
+    tokens.listCharacters.mockResolvedValue([]);
+    await expect(service.bindStoredSession(undefined, res as never)).rejects.toBeInstanceOf(
+      NeocomBackendError,
+    );
   });
 });

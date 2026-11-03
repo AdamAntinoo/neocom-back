@@ -1,13 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { EsiClient } from '@lgriffin/esi.ts';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { EsiClient, EsiTokenManager } from '@lgriffin/esi.ts';
 import type { NodeEnricher } from '@Domain/ports/node-enricher.port.js';
 import { ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
+import { ExceptionCatalog } from '@Infra/adapters/exceptions/index.js';
+import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
 import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
 import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
-import {
-  readPilotBlueprintsFromEsi,
-  type EsiIndustryApi,
-} from '@Outbound/industry/esi-industry.adapter.js';
+import { readPilotBlueprintsFromEsi } from '@Outbound/industry/esi-industry.adapter.js';
 
 export type BlueprintListItem = {
   jsonClass: 'ProcessedBlueprint';
@@ -20,16 +19,18 @@ export type BlueprintListItem = {
 };
 
 const STALE_MS = 60 * 60 * 1000;
+const ESI_USER_AGENT =
+  'neocom-back/0.1.0 (AdamAntinoo; https://github.com/AdamAntinoo/neocom-back)';
 
 @Injectable()
 export class BlueprintListService implements NodeEnricher {
   private readonly logger = new Logger(BlueprintListService.name);
-  private readonly esi = new EsiClient({ clientId: 'neocom-back-async' });
 
   constructor(
     private readonly store: ProcessedNodeStore,
     private readonly fanout: SseFanoutService,
     private readonly queue: EnrichmentQueueService,
+    @Inject(ESI_TOKEN_MANAGER) private readonly tokens: EsiTokenManager,
   ) {}
 
   scopeKey(pilotId: number): string {
@@ -71,7 +72,9 @@ export class BlueprintListService implements NodeEnricher {
         staleAfter: new Date(now.getTime() + STALE_MS),
       });
     }
-    void this.queue.enqueueScope(scope);
+    if (partial.length > 0) {
+      void this.queue.enqueueScope(scope);
+    }
     return partial;
   }
 
@@ -81,8 +84,11 @@ export class BlueprintListService implements NodeEnricher {
     if (!current) {
       return;
     }
-    const manufactureIndex = Number((Math.random() * 2 + 0.5).toFixed(3));
-    const marketCost = Math.floor(Math.random() * 1_000_000);
+    // Calculated enrichment is still local (BASSE-004); values are deterministic from node id
+    // until a real cost index service exists — not scaffold ESI rows.
+    const seed = Number(nodeId) || 0;
+    const manufactureIndex = Number(((seed % 150) / 100 + 0.5).toFixed(3));
+    const marketCost = 10_000 + (seed % 90_000);
     const manufactureCost = Math.floor(marketCost * 0.85);
     const updated = await this.store.upsertItem({
       ...current,
@@ -99,48 +105,32 @@ export class BlueprintListService implements NodeEnricher {
   }
 
   /**
-   * Persistence miss: try ESI via `@lgriffin/esi.ts` (BASSE-011); fall back to scaffold
-   * when the character-blueprints call needs auth the process does not yet hold.
+   * Persistence miss: authenticated ESI character blueprints (BASSE-011).
+   * No scaffold fallback — token/ESI failures propagate as NeocomBackendError.
    */
   private async buildPartialFromEsi(pilotId: number): Promise<BlueprintListItem[]> {
+    let client: EsiClient;
     try {
-      const rows = await readPilotBlueprintsFromEsi(this.esi as unknown as EsiIndustryApi, pilotId);
-      if (rows.length > 0) {
-        this.logger.debug(`ESI miss path for pilot ${pilotId} — ${rows.length} blueprints from ESI`);
-        return rows.map((bp) => ({
-          jsonClass: 'ProcessedBlueprint' as const,
-          blueprintId: bp.getBlueprintId(),
-          name: bp.getBlueprintTypeName() || `Blueprint ${bp.getBlueprintId()}`,
-          ready: false,
-          manufactureIndex: null,
-          marketCost: null,
-          manufactureCost: null,
-        }));
-      }
-    } catch (err) {
-      this.logger.warn(`ESI blueprint fetch failed for pilot ${pilotId}: ${String(err)}`);
+      client = await this.tokens.createClient(pilotId, { userAgent: ESI_USER_AGENT });
+    } catch {
+      throw ExceptionCatalog.TOKEN_UNAVAILABLE.doThrow();
     }
-    this.logger.debug(`ESI miss path for pilot ${pilotId} — using scaffold blueprints`);
-    return [
-      {
-        jsonClass: 'ProcessedBlueprint',
-        blueprintId: 1001,
-        name: `Blueprint A (${pilotId})`,
+
+    try {
+      const rows = await readPilotBlueprintsFromEsi(client, pilotId);
+      this.logger.debug(`ESI miss path for pilot ${pilotId} — ${rows.length} blueprints from ESI`);
+      return rows.map((bp) => ({
+        jsonClass: 'ProcessedBlueprint' as const,
+        blueprintId: bp.getBlueprintId(),
+        name: bp.getBlueprintTypeName() || `Blueprint ${bp.getBlueprintId()}`,
         ready: false,
         manufactureIndex: null,
         marketCost: null,
         manufactureCost: null,
-      },
-      {
-        jsonClass: 'ProcessedBlueprint',
-        blueprintId: 1002,
-        name: `Blueprint B (${pilotId})`,
-        ready: false,
-        manufactureIndex: null,
-        marketCost: null,
-        manufactureCost: null,
-      },
-    ];
+      }));
+    } finally {
+      client.shutdown();
+    }
   }
 }
 
