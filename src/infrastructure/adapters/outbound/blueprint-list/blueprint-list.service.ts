@@ -4,6 +4,10 @@ import type { NodeEnricher } from '@Domain/ports/node-enricher.port.js';
 import { ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
 import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
 import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
+import {
+  readPilotBlueprintsFromEsi,
+  type EsiIndustryApi,
+} from '@Outbound/industry/esi-industry.adapter.js';
 
 export type BlueprintListItem = {
   jsonClass: 'ProcessedBlueprint';
@@ -94,15 +98,29 @@ export class BlueprintListService implements NodeEnricher {
     });
   }
 
+  /**
+   * Persistence miss: try ESI via `@lgriffin/esi.ts` (BASSE-011); fall back to scaffold
+   * when the character-blueprints call needs auth the process does not yet hold.
+   */
   private async buildPartialFromEsi(pilotId: number): Promise<BlueprintListItem[]> {
-    // ESI character blueprints require auth; for scaffold use a deterministic placeholder
-    // shaped like ESI results when the token path is not yet wired for this list.
     try {
-      void this.esi;
-      this.logger.debug(`ESI miss path for pilot ${pilotId} — using scaffold blueprints`);
+      const rows = await readPilotBlueprintsFromEsi(this.esi as unknown as EsiIndustryApi, pilotId);
+      if (rows.length > 0) {
+        this.logger.debug(`ESI miss path for pilot ${pilotId} — ${rows.length} blueprints from ESI`);
+        return rows.map((bp) => ({
+          jsonClass: 'ProcessedBlueprint' as const,
+          blueprintId: bp.getBlueprintId(),
+          name: bp.getBlueprintTypeName() || `Blueprint ${bp.getBlueprintId()}`,
+          ready: false,
+          manufactureIndex: null,
+          marketCost: null,
+          manufactureCost: null,
+        }));
+      }
     } catch (err) {
-      this.logger.warn(`ESI blueprint fetch failed: ${String(err)}`);
+      this.logger.warn(`ESI blueprint fetch failed for pilot ${pilotId}: ${String(err)}`);
     }
+    this.logger.debug(`ESI miss path for pilot ${pilotId} — using scaffold blueprints`);
     return [
       {
         jsonClass: 'ProcessedBlueprint',
