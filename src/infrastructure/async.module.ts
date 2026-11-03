@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NODE_ENRICHER } from '@Domain/ports/node-enricher.port.js';
 import { ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
 import { V1BlueprintListController } from '@Inbound/industry/v1-blueprint-list.controller.js';
+import { AuthModule } from '@Infra/auth/auth.module.js';
 import { BlueprintListService } from '@Outbound/blueprint-list/blueprint-list.service.js';
 import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
 import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
@@ -15,6 +16,7 @@ const useTypeOrm = Boolean(process.env['DATABASE_URL']);
 
 @Module({
   imports: [
+    AuthModule,
     ConfigModule,
     ...(useTypeOrm
       ? [

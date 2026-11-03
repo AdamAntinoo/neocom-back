@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { readPilotBlueprintsFromEsi } from './esi-industry.adapter.js';
+import { HttpStatus } from '@nestjs/common';
+import { EsiConfigurationError } from '@lgriffin/esi.ts';
+import { NeocomBackendError } from 'neocom-domain';
+import { attachPilotAccessToken, readPilotBlueprintsFromEsi } from './esi-industry.adapter.js';
 
 describe('readPilotBlueprintsFromEsi', () => {
   it('maps ESI rows into BlueprintV1', async () => {
@@ -30,5 +33,55 @@ describe('readPilotBlueprintsFromEsi', () => {
       runs: 300,
       blueprintTypeIconURL: 'https://images.evetech.net/types/1245/bp',
     });
+  });
+
+  it('maps missing ESI auth config to TOKEN_UNAVAILABLE', async () => {
+    const esi = {
+      characters: {
+        getCharacterBlueprints: vi
+          .fn()
+          .mockRejectedValue(new EsiConfigurationError('NO_AUTH_TOKEN', 'missing token')),
+      },
+    };
+    try {
+      await readPilotBlueprintsFromEsi(esi, 42);
+      expect.unreachable('should throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(NeocomBackendError);
+      expect((error as NeocomBackendError).httpStatus).toBe(HttpStatus.UNAUTHORIZED);
+    }
+  });
+});
+
+describe('attachPilotAccessToken', () => {
+  it('sets access token and provider from the token manager', async () => {
+    const esi = {
+      characters: { getCharacterBlueprints: vi.fn() },
+      setAccessToken: vi.fn(),
+      setTokenProvider: vi.fn(),
+    };
+    const provider = vi.fn();
+    const tokens = {
+      getToken: vi.fn().mockResolvedValue('access-xyz'),
+      tokenProviderFor: vi.fn().mockReturnValue(provider),
+    };
+
+    await attachPilotAccessToken(esi, tokens, 92002067);
+
+    expect(tokens.getToken).toHaveBeenCalledWith(92002067);
+    expect(esi.setAccessToken).toHaveBeenCalledWith('access-xyz');
+    expect(esi.setTokenProvider).toHaveBeenCalledWith(provider);
+  });
+
+  it('maps token manager failures to TOKEN_UNAVAILABLE', async () => {
+    const esi = {
+      characters: { getCharacterBlueprints: vi.fn() },
+      setAccessToken: vi.fn(),
+    };
+    const tokens = {
+      getToken: vi.fn().mockRejectedValue(new Error('missing')),
+      tokenProviderFor: vi.fn(),
+    };
+    await expect(attachPilotAccessToken(esi, tokens, 1)).rejects.toBeInstanceOf(NeocomBackendError);
   });
 });
