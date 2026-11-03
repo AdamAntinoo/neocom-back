@@ -10,6 +10,8 @@ export type LocationIdentifierType =
   | 'STRUCTURE';
 
 export interface SpaceLocation {
+  /** Programme domain type name on the wire (DOM-JSONCLASS-001 / 003). */
+  jsonClass: 'SpaceLocation';
   locationType: LocationIdentifierType;
   locationId: number;
   regionId?: number;
