@@ -57,8 +57,8 @@ export class InMemoryLocationCatalog implements LocationCatalog {
     });
   }
 
-  private put(location: SpaceLocation): void {
-    this.byId.set(location.locationId, location);
+  private put(location: Omit<SpaceLocation, 'jsonClass'>): void {
+    this.byId.set(location.locationId, { ...location, jsonClass: 'SpaceLocation' });
   }
 
   async searchLocation4Id(locationId: number): Promise<SpaceLocation | undefined> {

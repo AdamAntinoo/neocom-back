@@ -5,6 +5,7 @@ import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/spac
 import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
 
 const fixtureStation: SpaceLocation = {
+  jsonClass: 'SpaceLocation',
   locationType: 'STATION',
   locationId: LOCATION_FIXTURE.stationId,
   stationId: LOCATION_FIXTURE.stationId,
@@ -20,6 +21,7 @@ const fixtureStation: SpaceLocation = {
 };
 
 const fixtureRegion: SpaceLocation = {
+  jsonClass: 'SpaceLocation',
   locationType: 'REGION',
   locationId: LOCATION_FIXTURE.regionId,
   regionId: LOCATION_FIXTURE.regionId,
@@ -38,6 +40,7 @@ describe('GetSpaceLocationUseCase', () => {
 
   it('returns station kind from catalog for fixture station id', async () => {
     const location = await useCase.execute(LOCATION_FIXTURE.stationId);
+    expect(location.jsonClass).toBe('SpaceLocation');
     expect(location.locationType).toBe('STATION');
     expect(location.locationId).toBe(LOCATION_FIXTURE.stationId);
     expect(location.regionId).toBe(LOCATION_FIXTURE.regionId);
