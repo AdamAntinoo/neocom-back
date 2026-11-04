@@ -1,80 +1,134 @@
 openapi: 3.0.3
 info:
-  title: NEOCOM Industry API
+  title: NEOCOM Industry Adapter API
   version: 0.1.0
   description: |
-    # Industry
+    ### Industry inbound adapter (`V1IndustryController`)
 
-    First endpoint: blueprints belonging to a pilot.
+    |||
+    |------------------|------------------------------------------|
+    |**System:**|back|
+    |**Adapter:**|industry|
+    |**Controller:**|`src/infrastructure/adapters/inbound/industry/v1-industry.controller.ts`|
+    ---
 
-    `GET /v1/pilots/{pilotId}/blueprints` returns an array of `BlueprintV1`
-    (domain model name — BACK-SVC-061).
+    Sync pilot blueprints as wire DTOs (`BlueprintV1Dto[]`), with optional embedded
+    `SpaceLocationV1Dto` from the space-location use case (BLP-015 / BLP-018…020).
 
-    Field mapping from ESI blueprints plus model-only fields (names, icons,
-    output type) is stated at group level; detailed ESI↔model map remains under review
-    (BACK-SVC-072).
+    Distinct from async manufacture list (`manufacture-service-v0.1.0.yaml`).
+
+    **Error body:** `NeocomError` via `NeocomBackendErrorFilter` / ExceptionCatalog.
 
     ## Changelog
 
-    ### 2026-11-02 — Pilot blueprints
-
-    - `GET /v1/pilots/{pilotId}/blueprints` → `BlueprintV1[]`.
+    * `0.1.0` — `GET /v1/pilots/{pilotId}/blueprints` → `BlueprintV1Dto[]` (+ location embed).
+tags:
+  - name: industry
+    description: Sync pilot blueprints interchange.
+servers:
+  - url: http://localhost:3000
+    description: Local development
 paths:
   /v1/pilots/{pilotId}/blueprints:
     get:
-      operationId: getPilotBlueprints
-      summary: Pilot blueprints
+      tags: [industry]
+      operationId: listPilotBlueprintsV1
+      summary: Pilot blueprints (sync)
       description: |
-        Blueprints owned by the pilot. Response items are `BlueprintV1`.
+        Returns `BlueprintV1Dto[]`. Location is resolved via `GetSpaceLocationUseCase`
+        when the catalog has the `locationId` (catalog miss leaves `location` unset).
+
+        Cookie `neocom_access` is used for authenticated ESI / structure location resolve.
+        Invalid cookie may yield **401** (`TOKEN_UNAVAILABLE`) via access-cookie middleware.
+
+        **Responses:**
+        * **200** — `BlueprintV1Dto[]`
+        * **400** — `INVALID_REQUEST` (`pilotId` not integer)
+        * **401** — `TOKEN_UNAVAILABLE` (invalid/unrefreshable access cookie)
+        * **404** — `NOT_FOUND` (ESI character blueprints not found)
+        * **500** — `INTERNAL_SERVER_ERROR` (`ESI_INDUSTRY_UNAVAILABLE`)
       parameters:
         - name: pilotId
           in: path
           required: true
-          description: Pilot unique identifier.
           schema:
             type: integer
             format: int64
+        - name: Cookie
+          in: header
+          required: false
+          description: Optional `neocom_access=…` for ESI / structure location.
+          schema:
+            type: string
       responses:
         "200":
-          description: List of `BlueprintV1`.
+          description: Blueprint list.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/BlueprintV1"
+                  $ref: "#/components/schemas/BlueprintV1Dto"
         "400":
-          description: "'pilotId' is not an integer."
+          $ref: "#/components/responses/InvalidPilotIdResponse"
         "401":
-          description: Authenticated ESI access required and missing.
+          $ref: "#/components/responses/TokenUnavailableResponse"
         "404":
-          description: Pilot or blueprints not available.
+          $ref: "#/components/responses/NotFoundResponse"
         "500":
-          description: Upstream ESI failure.
+          $ref: "#/components/responses/IndustryUnavailableResponse"
 components:
   schemas:
-    BlueprintV1:
+    LocationIdentifierType:
+      type: string
+      enum: [REGION, CONSTELLATION, SOLAR_SYSTEM, STATION, STRUCTURE]
+    SpaceLocationV1Dto:
       type: object
-      description: |
-        Domain model `BlueprintV1`. Schema name matches the domain model (BACK-SVC-061).
-        When this document disagrees with `neocom-domain` BlueprintV1, the domain model wins
-        (BACK-SVC-063).
+      description: Catalog-resolved location embed (BLP-015 / BLP-020).
+      required: [jsonClass, locationType, locationId]
+      properties:
+        jsonClass:
+          type: string
+          enum: [SpaceLocationV1Dto]
+        locationType:
+          $ref: "#/components/schemas/LocationIdentifierType"
+        locationId:
+          type: integer
+          format: int64
+        regionId: { type: integer, format: int64 }
+        regionName: { type: string }
+        constellationId: { type: integer, format: int64 }
+        constellationName: { type: string }
+        solarSystemId: { type: integer, format: int64 }
+        solarSystemName: { type: string }
+        securityClass: { type: string }
+        securityStatus: { type: number }
+        stationId: { type: integer, format: int64 }
+        stationName: { type: string }
+        structureId: { type: integer, format: int64 }
+        structureName: { type: string }
+        structureTypeId: { type: integer, format: int32 }
+        ownerId: { type: integer, format: int64 }
+        corporationId: { type: integer, format: int64 }
+        corporationName: { type: string }
+    BlueprintV1Dto:
+      type: object
+      description: Back ↔ front blueprint interchange (BLP-018 / BLP-026).
       required:
         - jsonClass
         - blueprintId
         - blueprintTypeId
+        - locationId
       properties:
         jsonClass:
           type: string
-          example: BlueprintV1
+          enum: [BlueprintV1Dto]
         blueprintId:
           type: integer
           format: int64
-          description: ESI item_id
         blueprintTypeId:
           type: integer
           format: int32
-          description: ESI type_id
         blueprintTypeName:
           type: string
         blueprintTypeIconURL:
@@ -98,3 +152,84 @@ components:
           maximum: 20
         maxRuns:
           type: integer
+        locationId:
+          type: integer
+          format: int64
+          description: ESI location_id
+        locationFlag:
+          type: string
+        location:
+          $ref: "#/components/schemas/SpaceLocationV1Dto"
+    ErrorsInner:
+      type: object
+      required: [code, description]
+      properties:
+        code: { type: string }
+        description: { type: string }
+        field: { type: string }
+        container: { type: string }
+        value: { type: string }
+    NeocomError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorsInner"
+        traceId:
+          type: string
+  responses:
+    InvalidPilotIdResponse:
+      description: `ExceptionCatalog.INVALID_PILOT_ID`
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            InvalidPilotId:
+              value:
+                errors:
+                  - code: "INVALID_REQUEST"
+                    description: "pilotId must be an integer."
+                    field: "pilotId"
+                    container: "path"
+                    value: "not-a-number"
+    TokenUnavailableResponse:
+      description: Access cookie present but cannot be refreshed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            TokenUnavailable:
+              value:
+                errors:
+                  - code: "TOKEN_UNAVAILABLE"
+                    description: "The access token could not be replaced."
+    NotFoundResponse:
+      description: ESI reports not-found for character blueprints.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            NotFound:
+              value:
+                errors:
+                  - code: "NOT_FOUND"
+                    description: "No blueprints (or pilot) for id 1."
+                    field: "pilotId"
+                    container: "path"
+                    value: "1"
+    IndustryUnavailableResponse:
+      description: `ExceptionCatalog.ESI_INDUSTRY_UNAVAILABLE`
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            Unavailable:
+              value:
+                errors:
+                  - code: "INTERNAL_SERVER_ERROR"
+                    description: "ESI industry source is not available."

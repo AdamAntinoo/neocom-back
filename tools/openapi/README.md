@@ -3,16 +3,30 @@
 Rules from OpenSpec `back-openapi` (BACK-SVC-060…063):
 
 1. **OpenAPI first** — when a port has an OpenAPI surface, update that specification as the first development stage for new back code.
-2. **Schema names** — name schemas after their **domain model** names (e.g. `BlueprintV1`, `PilotV2`, `PublicPilotV1`).
+2. **Schema names** — name schemas after their **domain / interchange** model names (e.g. `BlueprintV1Dto`, `PilotV2`, `SpaceLocation`).
 3. **Versioned paths** — every endpoint path includes a version prefix (e.g. `v1`).
-4. **Domain model wins** — if OpenAPI and the domain model disagree on fields or names, correct OpenAPI to match the domain model.
+4. **Domain model wins** — if OpenAPI and the domain/DTO disagree on fields or names, correct OpenAPI to match the code.
 
-Runtime TypeScript types come from **`neocom-domain`** (`file:../neocom-domain`). Do **not** regenerate Nest DTO classes under `src/generated` — that tree is removed / deprecated.
+Each **inbound adapter** under `src/infrastructure/adapters/inbound/` has a matching OpenAPI file that documents:
+
+- Happy-path request/response DTOs
+- Supported **ExceptionCatalog** / HTTP error responses (`NeocomError`)
+
+Template style reference (external example): `gateway-adapter-service-v0.2.0.yaml`.
+
+Runtime TypeScript types come from **`neocom-domain`** and back DTOs under `infrastructure/adapters/dto`. Do **not** regenerate Nest DTO classes under `src/generated`.
 
 ## Specs in this folder
 
-| File | API |
-| --- | --- |
-| `pilot-service-v0.1.0.yaml` | Pilot (`GET /v1/pilots/{pilotId}`) → `PublicPilotV1` / `PilotV2` |
-| `industry-service-v0.1.0.yaml` | Industry pilot blueprints (`GET /v1/pilots/{pilotId}/blueprints`) → `BlueprintV1[]` |
-| `gateway-adapter-service-v0.2.0.yaml` | Gateway adapter (legacy) |
+| File | Inbound adapter | Controllers |
+| --- | --- | --- |
+| `auth-service-v0.1.0.yaml` | auth | `auth/v1-auth.controller.ts` |
+| `pilot-service-v0.1.0.yaml` | pilot | `pilot/v1-pilot.controller.ts` |
+| `industry-service-v0.1.0.yaml` | industry | `industry/v1-industry.controller.ts` |
+| `manufacture-service-v0.1.0.yaml` | manufacture | `industry/v1-blueprint-list.controller.ts` |
+| `universe-service-v0.1.0.yaml` | universe | `universe/v1-spacelocation.controller.ts` |
+| `gateway-adapter-service-v0.2.0.yaml` | *(template example only — not a NEOCOM runtime adapter)* | — |
+
+## Postman
+
+Import **one** collection: `tools/postman/neocom-back.postman_collection.json` (folder per adapter → Happy path + Exceptions). See `tools/postman/README.md`.

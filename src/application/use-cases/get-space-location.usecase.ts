@@ -1,27 +1,30 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   LOCATION_CATALOG,
   type LocationCatalog,
 } from '@Domain/ports/location-catalog.port.js';
+import type { LocationAuth } from '@Domain/spacelocation/location-auth.js';
 import type { SpaceLocation } from '@Domain/spacelocation/space-location.js';
-import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
+import {
+  ExceptionCatalog,
+  exceptionPayload,
+} from '@Infra/adapters/exceptions/index.js';
 
 @Injectable()
 export class GetSpaceLocationUseCase {
   constructor(@Inject(LOCATION_CATALOG) private readonly catalog: LocationCatalog) {}
 
-  async execute(locationId: number): Promise<SpaceLocation> {
-    const location = await this.catalog.searchLocation4Id(locationId);
+  async execute(locationId: number, auth?: LocationAuth | null): Promise<SpaceLocation> {
+    const location = await this.catalog.searchLocation4Id(locationId, auth);
     if (!location) {
-      throw new NeocomBackendError(HttpStatus.NOT_FOUND, [
-        {
-          code: 'LOCATION_NOT_FOUND',
-          description: `No SpaceLocation catalog entry for id ${locationId}.`,
-          field: 'locationId',
-          container: 'path',
-          value: String(locationId),
-        },
-      ]);
+      throw ExceptionCatalog.LOCATION_NOT_FOUND.doThrow(
+        locationId,
+        exceptionPayload()
+          .field('locationId')
+          .container('path')
+          .value(String(locationId))
+          .build(),
+      );
     }
     return location;
   }

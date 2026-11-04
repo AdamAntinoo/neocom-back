@@ -1,56 +1,28 @@
 openapi: 3.0.3
 info:
-  title: NEOCOM Pilot API
+  title: NEOCOM Pilot Adapter API
   version: 0.1.0
   description: |
-    # Pilot
+    ### Pilot inbound adapter (`V1PilotController`)
 
-    `GET /v1/pilots/{pilotId}` returns `PublicPilotV1` when anonymous, or `PilotV2` when logged in (neocom-domain models; no generated DTOs).
+    |||
+    |------------------|------------------------------------------|
+    |**System:**|back|
+    |**Adapter:**|pilot|
+    |**Controller:**|`src/infrastructure/adapters/inbound/pilot/v1-pilot.controller.ts`|
+    ---
 
-    The controller returns that DTO. Failures are thrown and written by an upper layer as `NeocomError`.
+    `GET /v1/pilots/{pilotId}` returns `PublicPilotV1` when anonymous, or `PilotV2` when
+    logged in (non-empty `Authorization` header — value not validated as a token).
 
     Private fields are **omitted** when the caller is not logged in:
+    `totalSkillpoints`, `walletBalance`, `currentShipName`, `currentShipTypeName`, `lastKnownLocation`.
 
-    - `totalSkillpoints`
-    - `walletBalance`
-    - `currentShipName`
-    - `currentShipTypeName`
-    - `lastKnownLocation`
-
-    **Documented HTTP errors:** **400**, **404**, **500**.
+    **Error body:** `NeocomError` via ExceptionCatalog (**400**, **404**, **500**).
 
     ## Changelog
 
-    ### 2026-10-14 — NeocomError responses
-
-    - Success stays `PilotV2`.
-    - **400** — `pilotId` is not an integer (`INVALID_REQUEST`).
-    - **404** — no pilot for that identifier (`NOT_FOUND`).
-    - **500** — the pilot source is not available (`INTERNAL_SERVER_ERROR`).
-    - Error bodies use `NeocomError`.
-
-    ### 2026-10-14 — Schema names
-
-    Every interchange schema ends with `V1Dto`:
-
-    - `PilotDto` is `PilotV2`
-    - `PublicCorporationV1` is `PublicCorporationSummary`
-    - `Station` is `StationV1Dto`
-    - `AllianceV1` is `PilotAllianceSummary`
-    - `UniverseRaceData` is `PilotNameSummary`
-    - `UniverseAncestryData` is `PilotNameSummary`
-    - `UniverseBloodlineData` is `PilotNameSummary`
-    - `SpaceLocationV1` is `SpaceLocationV1`
-
-    ### 2026-10-14 — Version prefix
-
-    - Every endpoint path starts with `v1`.
-    - Pilot is `GET /v1/pilots/{pilotId}`.
-
-    ### 2026-10-14 — First Pilot endpoint
-
-    - `GET /pilots/{pilotId}` returns `PilotDto`.
-    - Private fields are omitted when the caller is not logged in.
+    * `0.1.0` — Pilot get; NeocomError outcomes; domain schema names (`PublicPilotV1` / `PilotV2`).
 paths:
   /v1/pilots/{pilotId}:
     get:

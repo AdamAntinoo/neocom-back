@@ -45,7 +45,7 @@ describe('GetPilotBlueprintsUseCase', () => {
     const result = await useCase.execute(42);
 
     expect(loader.loadPilotBlueprintDtos).toHaveBeenCalledWith(42);
-    expect(getSpaceLocation.execute).toHaveBeenCalledWith(LOCATION_FIXTURE.stationId);
+    expect(getSpaceLocation.execute).toHaveBeenCalledWith(LOCATION_FIXTURE.stationId, null);
     expect(result).toHaveLength(1);
     expect(result[0].jsonClass).toBe('BlueprintV1Dto');
     expect(result[0].locationId).toBe(LOCATION_FIXTURE.stationId);
@@ -85,8 +85,39 @@ describe('GetPilotBlueprintsUseCase', () => {
 
     const result = await useCase.execute(7);
 
-    expect(getSpaceLocation.execute).toHaveBeenCalledWith(60006907);
+    expect(getSpaceLocation.execute).toHaveBeenCalledWith(60006907, null);
     expect(result[0].location).toBeUndefined();
     expect(result[0].locationId).toBe(60006907);
+  });
+
+  it('leaves location unset when space-location use case returns FORBIDDEN', async () => {
+    const sample = new BlueprintV1Dto({
+      blueprintId: 3,
+      blueprintTypeId: 10,
+      locationId: 1_000_000_000_035,
+      locationFlag: 'Hangar',
+    });
+    const loader: BlueprintDtoLoader = {
+      loadPilotBlueprintDtos: vi.fn().mockResolvedValue([sample]),
+    };
+    const getSpaceLocation = {
+      execute: vi.fn().mockRejectedValue(
+        new NeocomBackendError(HttpStatus.FORBIDDEN, [
+          {
+            code: 'FORBIDDEN',
+            description: 'ESI forbids access to location id 1000000000035.',
+            field: 'locationId',
+            container: 'path',
+            value: '1000000000035',
+          },
+        ]),
+      ),
+    } as unknown as GetSpaceLocationUseCase;
+    const useCase = new GetPilotBlueprintsUseCase(loader, getSpaceLocation);
+
+    const result = await useCase.execute(7);
+
+    expect(result[0].location).toBeUndefined();
+    expect(result[0].locationId).toBe(1_000_000_000_035);
   });
 });
