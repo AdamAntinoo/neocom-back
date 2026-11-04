@@ -6,7 +6,7 @@ import { ExceptionCatalog } from '@Infra/adapters/exceptions/index.js';
 import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
 import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
 import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
-import { readPilotBlueprintsFromEsi } from '@Outbound/industry/esi-industry.adapter.js';
+import { readPilotBlueprintDtosFromEsi } from '@Outbound/industry/esi-industry.adapter.js';
 
 export type BlueprintListItem = {
   jsonClass: 'ProcessedBlueprint';
@@ -117,12 +117,12 @@ export class BlueprintListService implements NodeEnricher {
     }
 
     try {
-      const rows = await readPilotBlueprintsFromEsi(client, pilotId);
-      this.logger.debug(`ESI miss path for pilot ${pilotId} — ${rows.length} blueprints from ESI`);
-      return rows.map((bp) => ({
+      const dtos = await readPilotBlueprintDtosFromEsi(client, pilotId);
+      this.logger.debug(`ESI miss path for pilot ${pilotId} — ${dtos.length} blueprints from ESI`);
+      return dtos.map((bp) => ({
         jsonClass: 'ProcessedBlueprint' as const,
-        blueprintId: bp.getBlueprintId(),
-        name: bp.getBlueprintTypeName() || `Blueprint ${bp.getBlueprintId()}`,
+        blueprintId: bp.blueprintId,
+        name: bp.blueprintTypeName || `Blueprint ${bp.blueprintId}`,
         ready: false,
         manufactureIndex: null,
         marketCost: null,
