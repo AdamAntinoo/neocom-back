@@ -39,4 +39,24 @@ export const ExceptionCatalog = {
     'The access token could not be replaced.',
     HttpStatus.UNAUTHORIZED,
   ),
+
+  LOCATION_NOT_FOUND: catalogEntry(
+    'LOCATION_NOT_FOUND',
+    'No SpaceLocation catalog entry for id {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  /** Structure id range requires authenticated ESI via the access cookie (LOC-135). */
+  LOCATION_AUTH_REQUIRED: catalogEntry(
+    'UNAUTHORIZED',
+    'Authenticated ESI is required to resolve structure id {0}.',
+    HttpStatus.UNAUTHORIZED,
+  ),
+
+  /** ESI refused access to the location (typically structure 403). */
+  LOCATION_FORBIDDEN: catalogEntry(
+    'FORBIDDEN',
+    'ESI forbids access to location id {0}.',
+    HttpStatus.FORBIDDEN,
+  ),
 } as const;

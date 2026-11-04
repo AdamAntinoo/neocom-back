@@ -1,0 +1,244 @@
+openapi: 3.0.3
+info:
+  title: NEOCOM Auth Adapter API
+  version: 0.1.0
+  description: |
+    ### Auth inbound adapter (`V1AuthController`)
+
+    |||
+    |------------------|------------------------------------------|
+    |**System:**|back|
+    |**Adapter:**|auth|
+    |**Controller:**|`src/infrastructure/adapters/inbound/auth/v1-auth.controller.ts`|
+    ---
+
+    SSO callback exchange and local Postman session bootstrap.
+
+    **Operations:**
+    * `POST /v1/auth/callback` — exchange EVE SSO `code`/`state`; set `neocom_access` cookie.
+    * `GET /v1/auth/session` — bind stored ESI token into Postman env (local tooling only).
+
+    **Error body:** `NeocomError` (`errors[]` with `ErrorsInner`) via `NeocomBackendErrorFilter`.
+
+    ## Changelog
+
+    * `0.1.0` — Initial auth adapter contract aligned with ExceptionCatalog.
+tags:
+  - name: auth
+    description: SSO callback and local session bootstrap.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+paths:
+  /v1/auth/callback:
+    post:
+      tags: [auth]
+      operationId: authCallbackV1
+      summary: Exchange SSO authorization code
+      description: |
+        Exchanges `code` when `state` matches the `neocom_sso_state` cookie.
+        Sets `Set-Cookie: neocom_access=…` on success.
+
+        **Responses:**
+        * **200** — `AuthCallbackResponseDto`
+        * **400** — `SSO_STATE_MISMATCH`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCallbackRequestDto"
+            examples:
+              Nominal:
+                value:
+                  code: "eve-sso-authorization-code"
+                  state: "test-state"
+      responses:
+        "200":
+          description: SSO exchange succeeded; access cookie set.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthCallbackResponseDto"
+              examples:
+                Nominal:
+                  value:
+                    characterId: 92002067
+                    characterName: "Adam Antinoo"
+        "400":
+          $ref: "#/components/responses/SsoStateMismatchResponse"
+  /v1/auth/session:
+    get:
+      tags: [auth]
+      operationId: authSessionV1
+      summary: Bind stored session for local tooling
+      description: |
+        Reads `tokens.json` via EsiTokenManager and sets `neocom_access`.
+        Disabled when `ENVIRONMENT` is `production` / `prod` (**404**).
+
+        **Responses:**
+        * **200** — `StoredSessionResponseDto`
+        * **400** — `INVALID_REQUEST` when `characterId` is not an integer
+        * **401** — `TOKEN_UNAVAILABLE` when stored token cannot be loaded
+        * **404** — production disable, or character not in store
+      parameters:
+        - name: characterId
+          in: query
+          required: false
+          description: Optional character id; omit to bind the first stored character.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Session bound; cookie set.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredSessionResponseDto"
+        "400":
+          $ref: "#/components/responses/InvalidCharacterIdResponse"
+        "401":
+          $ref: "#/components/responses/TokenUnavailableResponse"
+        "404":
+          $ref: "#/components/responses/SessionNotFoundResponse"
+components:
+  schemas:
+    AuthCallbackRequestDto:
+      type: object
+      properties:
+        code:
+          type: string
+          description: EVE SSO authorization code.
+        state:
+          type: string
+          description: Must match `neocom_sso_state` cookie.
+    AuthCallbackResponseDto:
+      type: object
+      required: [characterId, characterName]
+      properties:
+        characterId:
+          type: integer
+          format: int64
+        characterName:
+          type: string
+    StoredSessionResponseDto:
+      type: object
+      required:
+        - characterId
+        - characterName
+        - pilotId
+        - cookieName
+        - neocomAccessCookie
+        - authorization
+        - characters
+      properties:
+        characterId:
+          type: integer
+          format: int64
+        characterName:
+          type: string
+        pilotId:
+          type: integer
+          format: int64
+          description: Same as characterId for NEOCOM pilot identity.
+        cookieName:
+          type: string
+          enum: [neocom_access]
+        neocomAccessCookie:
+          type: string
+          description: Raw cookie value for Postman `Cookie: neocom_access=…`.
+        authorization:
+          type: string
+          description: Non-empty marker for Pilot logged-in path.
+        characters:
+          type: array
+          items:
+            type: object
+            properties:
+              characterId:
+                type: integer
+                format: int64
+              characterName:
+                type: string
+    ErrorsInner:
+      type: object
+      required: [code, description]
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+        field:
+          type: string
+        container:
+          type: string
+        value:
+          type: string
+    NeocomError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorsInner"
+        traceId:
+          type: string
+  responses:
+    SsoStateMismatchResponse:
+      description: `ExceptionCatalog.SSO_STATE_MISMATCH` — state/cookie/code gate failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            StateMismatch:
+              value:
+                errors:
+                  - code: "SSO_STATE_MISMATCH"
+                    description: "The request state does not match. Caller not verified."
+                    field: "state"
+                    container: "body"
+                    value: "wrong-state"
+    InvalidCharacterIdResponse:
+      description: `ExceptionCatalog.INVALID_PILOT_ID` on query `characterId`.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            InvalidCharacterId:
+              value:
+                errors:
+                  - code: "INVALID_REQUEST"
+                    description: "characterId must be an integer."
+                    field: "characterId"
+                    container: "query"
+                    value: "not-a-number"
+    TokenUnavailableResponse:
+      description: `ExceptionCatalog.TOKEN_UNAVAILABLE`.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            TokenUnavailable:
+              value:
+                errors:
+                  - code: "TOKEN_UNAVAILABLE"
+                    description: "The access token could not be replaced."
+    SessionNotFoundResponse:
+      description: Production disable or character missing from store.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            NotFound:
+              value:
+                errors:
+                  - code: "NOT_FOUND"
+                    description: "No stored character matches this identifier."
+                    field: "characterId"
+                    container: "query"
+                    value: "999"

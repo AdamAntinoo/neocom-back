@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GetSpaceLocationUseCase } from './get-space-location.usecase.js';
 import type { LocationCatalog } from '@Domain/ports/location-catalog.port.js';
 import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
-import { NeocomBackendError } from '@Infra/errors/neocom-backend.error.js';
+import { NeocomBackendError } from 'neocom-domain';
 
 const fixtureStation: SpaceLocation = {
   jsonClass: 'SpaceLocation',
@@ -53,7 +53,7 @@ describe('GetSpaceLocationUseCase', () => {
     expect(location.locationId).toBe(LOCATION_FIXTURE.regionId);
   });
 
-  it('throws NOT_FOUND on catalog miss', async () => {
+  it('throws LOCATION_NOT_FOUND on catalog miss', async () => {
     await expect(useCase.execute(99999999)).rejects.toBeInstanceOf(NeocomBackendError);
     try {
       await useCase.execute(99999999);

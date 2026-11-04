@@ -1,0 +1,173 @@
+openapi: 3.0.3
+info:
+  title: NEOCOM Universe Adapter API
+  version: 0.1.0
+  description: |
+    ### Universe inbound adapter (`V1SpaceLocationController`)
+
+    |||
+    |------------------|------------------------------------------|
+    |**System:**|back|
+    |**Adapter:**|universe / spacelocation|
+    |**Controller:**|`src/infrastructure/adapters/inbound/universe/v1-spacelocation.controller.ts`|
+    ---
+
+    Space location lookup by id (LOC-010). Kind is not in the path; the catalog
+    decides `locationType`. Structures require the request access cookie (LOC-135).
+
+    **Error body:** `NeocomError` via ExceptionCatalog (`LOCATION_NOT_FOUND`, `UNAUTHORIZED`).
+    Invalid path id (non-integer) is Nest `ParseIntPipe` **400**.
+
+    ## Changelog
+
+    * `0.1.0` — `GET /api/v1/universe/spacelocations/{locationId}` → `SpaceLocation`.
+tags:
+  - name: universe
+    description: Space location lookup.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+paths:
+  /api/v1/universe/spacelocations/{locationId}:
+    get:
+      tags: [universe]
+      operationId: getSpaceLocationV1
+      summary: Lookup SpaceLocation by id
+      description: |
+        Returns one complete `SpaceLocation` (jsonClass `SpaceLocation`).
+
+        Public ids (region &lt; 20M … station &lt; 61M) resolve without cookie.
+        Structure ids require `Cookie: neocom_access=…` (**401** when missing/invalid).
+
+        **Responses:**
+        * **200** — `SpaceLocation`
+        * **400** — path `locationId` not an integer (`ParseIntPipe`)
+        * **401** — `UNAUTHORIZED` (`LOCATION_AUTH_REQUIRED`) for structure without valid cookie
+        * **404** — `LOCATION_NOT_FOUND`
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: Cookie
+          in: header
+          required: false
+          description: 'neocom_access=…' required for structure id ranges.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Catalog SpaceLocation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpaceLocation"
+              examples:
+                Station:
+                  value:
+                    jsonClass: SpaceLocation
+                    locationType: STATION
+                    locationId: 60008494
+                    stationId: 60008494
+                    stationName: "Amarr VIII (Oris) - Emperor Family Academy"
+                    solarSystemId: 30002187
+                    solarSystemName: Amarr
+                    securityClass: E1
+                    securityStatus: 0.5623334
+                    constellationId: 20000322
+                    constellationName: "Throne Worlds"
+                    regionId: 1000043
+                    regionName: Domain
+        "400":
+          description: Nest ParseIntPipe — locationId is not an integer.
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: "#/components/responses/LocationAuthRequiredResponse"
+        "404":
+          $ref: "#/components/responses/LocationNotFoundResponse"
+components:
+  schemas:
+    LocationIdentifierType:
+      type: string
+      enum: [REGION, CONSTELLATION, SOLAR_SYSTEM, STATION, STRUCTURE]
+    SpaceLocation:
+      type: object
+      description: Domain catalog node (LOC-001 / DOM-LOC-002). No HAL links.
+      required: [jsonClass, locationType, locationId]
+      properties:
+        jsonClass:
+          type: string
+          enum: [SpaceLocation]
+        locationType:
+          $ref: "#/components/schemas/LocationIdentifierType"
+        locationId:
+          type: integer
+          format: int64
+        regionId: { type: integer, format: int64 }
+        regionName: { type: string }
+        constellationId: { type: integer, format: int64 }
+        constellationName: { type: string }
+        solarSystemId: { type: integer, format: int64 }
+        solarSystemName: { type: string }
+        securityClass: { type: string }
+        securityStatus: { type: number }
+        stationId: { type: integer, format: int64 }
+        stationName: { type: string }
+        structureId: { type: integer, format: int64 }
+        structureName: { type: string }
+        structureTypeId: { type: integer, format: int32 }
+        ownerId: { type: integer, format: int64 }
+        corporationId: { type: integer, format: int64 }
+        corporationName: { type: string }
+    ErrorsInner:
+      type: object
+      required: [code, description]
+      properties:
+        code: { type: string }
+        description: { type: string }
+        field: { type: string }
+        container: { type: string }
+        value: { type: string }
+    NeocomError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorsInner"
+  responses:
+    LocationNotFoundResponse:
+      description: `ExceptionCatalog.LOCATION_NOT_FOUND`
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            NotFound:
+              value:
+                errors:
+                  - code: "LOCATION_NOT_FOUND"
+                    description: "No SpaceLocation catalog entry for id 99999999."
+                    field: "locationId"
+                    container: "path"
+                    value: "99999999"
+    LocationAuthRequiredResponse:
+      description: `ExceptionCatalog.LOCATION_AUTH_REQUIRED` (HTTP 401).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            Unauthorized:
+              value:
+                errors:
+                  - code: "UNAUTHORIZED"
+                    description: "Authenticated ESI is required to resolve structure id 1000000000035."
+                    field: "locationId"
+                    container: "path"
+                    value: "1000000000035"
