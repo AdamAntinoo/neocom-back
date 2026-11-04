@@ -9,37 +9,45 @@ import {
   isServerError,
   isUnauthorized,
 } from '@lgriffin/esi.ts';
-import { type BlueprintV1, type IndustryPort } from 'neocom-domain';
+import { BlueprintV1, type IndustryPort } from 'neocom-domain';
+import type { BlueprintDtoLoader } from '@App/ports/blueprint-dto-loader.port.js';
 import {
   ExceptionCatalog,
   exceptionPayload,
 } from '@Infra/adapters/exceptions/index.js';
-import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
+import { BlueprintV1Dto } from '@Infra/adapters/dto/blueprint-v1.dto.js';
 import {
-  blueprintV1FromEsi,
-  type EsiBlueprintRow,
-} from '@Infra/adapters/outbound/support/blueprint-v1-from-esi.js';
+  BlueprintListDtoConverter,
+  type EsiCharacterBlueprint,
+} from '@Infra/adapters/dto/blueprint-list-dto.converter.js';
+import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
 
 const ESI_USER_AGENT = 'neocom-back/0.1.0 (AdamAntinoo; https://github.com/AdamAntinoo/neocom-back)';
 
 /** ESI surface used by the industry outbound adapter (initial: character blueprints). */
 export interface EsiIndustryApi {
   characters: {
-    getCharacterBlueprints(characterId: number): Promise<EsiBlueprintRow[]>;
+    getCharacterBlueprints(characterId: number): Promise<EsiCharacterBlueprint[]>;
   };
   setAccessToken?(token: string): void;
   setTokenProvider?(provider: (() => Promise<string>) | undefined): void;
 }
 
 @Injectable()
-export class EsiIndustryAdapter implements IndustryPort, OnModuleDestroy {
+export class EsiIndustryAdapter implements IndustryPort, BlueprintDtoLoader, OnModuleDestroy {
   private readonly clients = new Map<number, EsiClient>();
 
   constructor(@Inject(ESI_TOKEN_MANAGER) private readonly tokens: EsiTokenManager) {}
 
+  /** Legacy domain port — maps DTO path to {@link BlueprintV1} without a second ESI mapper. */
   async getPilotBlueprints(pilotId: number): Promise<BlueprintV1[]> {
+    const dtos = await this.loadPilotBlueprintDtos(pilotId);
+    return dtos.map(dtoToDomainBlueprintV1);
+  }
+
+  async loadPilotBlueprintDtos(pilotId: number): Promise<BlueprintV1Dto[]> {
     const esi = await this.clientFor(pilotId);
-    return readPilotBlueprintsFromEsi(esi, pilotId);
+    return readPilotBlueprintDtosFromEsi(esi, pilotId);
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -57,10 +65,10 @@ export class EsiIndustryAdapter implements IndustryPort, OnModuleDestroy {
     try {
       const client = await this.tokens.createClient(pilotId, { userAgent: ESI_USER_AGENT });
       this.clients.set(pilotId, client);
-      return client;
     } catch {
       throw ExceptionCatalog.TOKEN_UNAVAILABLE.doThrow();
     }
+    return this.clients.get(pilotId)!;
   }
 }
 
@@ -79,13 +87,14 @@ export async function attachPilotAccessToken(
   }
 }
 
-export async function readPilotBlueprintsFromEsi(
+/** ESI character blueprints → {@link BlueprintV1Dto}[] (location fields retained; catalog embed is use-case). */
+export async function readPilotBlueprintDtosFromEsi(
   esi: EsiIndustryApi,
   pilotId: number,
-): Promise<BlueprintV1[]> {
+): Promise<BlueprintV1Dto[]> {
   try {
     const rows = await esi.characters.getCharacterBlueprints(pilotId);
-    return rows.map((row) => blueprintV1FromEsi(row));
+    return rows.map((row) => BlueprintListDtoConverter.toBlueprintV1Dto(row));
   } catch (error) {
     if (isNotFound(error)) {
       throw ExceptionCatalog.NOT_FOUND.doThrow(
@@ -103,4 +112,21 @@ export async function readPilotBlueprintsFromEsi(
     }
     throw error;
   }
+}
+
+/** Thin DTO → published domain model for {@link IndustryPort} only (not an ESI mapper). */
+function dtoToDomainBlueprintV1(dto: BlueprintV1Dto): BlueprintV1 {
+  return new BlueprintV1({
+    blueprintId: dto.blueprintId,
+    blueprintTypeId: dto.blueprintTypeId,
+    blueprintTypeName: dto.blueprintTypeName,
+    blueprintTypeIconURL: dto.blueprintTypeIconURL,
+    outputTypeId: dto.outputTypeId,
+    outputTypeName: dto.outputTypeName,
+    outputTypeIconURL: dto.outputTypeIconURL,
+    runs: dto.runs,
+    materialEfficiency: dto.materialEfficiency,
+    timeEfficiency: dto.timeEfficiency,
+    maxRuns: dto.maxRuns,
+  });
 }

@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import { EsiConfigurationError } from '@lgriffin/esi.ts';
 import { NeocomBackendError } from 'neocom-domain';
-import { attachPilotAccessToken, readPilotBlueprintsFromEsi } from './esi-industry.adapter.js';
+import { attachPilotAccessToken, readPilotBlueprintDtosFromEsi } from './esi-industry.adapter.js';
 
-describe('readPilotBlueprintsFromEsi', () => {
-  it('maps ESI rows into BlueprintV1', async () => {
+describe('readPilotBlueprintDtosFromEsi', () => {
+  it('maps ESI rows into BlueprintV1Dto with location fields', async () => {
     const esi = {
       characters: {
         getCharacterBlueprints: vi.fn().mockResolvedValue([
@@ -22,17 +22,20 @@ describe('readPilotBlueprintsFromEsi', () => {
         ]),
       },
     };
-    const list = await readPilotBlueprintsFromEsi(esi, 42);
+    const list = await readPilotBlueprintDtosFromEsi(esi, 42);
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({
-      jsonClass: 'BlueprintV1',
+      jsonClass: 'BlueprintV1Dto',
       blueprintId: 101,
       blueprintTypeId: 1245,
       materialEfficiency: 10,
       timeEfficiency: 0,
       runs: 300,
+      locationId: 60006907,
+      locationFlag: 'Hangar',
       blueprintTypeIconURL: 'https://images.evetech.net/types/1245/bp',
     });
+    expect(list[0].location).toBeUndefined();
   });
 
   it('maps missing ESI auth config to TOKEN_UNAVAILABLE', async () => {
@@ -44,7 +47,7 @@ describe('readPilotBlueprintsFromEsi', () => {
       },
     };
     try {
-      await readPilotBlueprintsFromEsi(esi, 42);
+      await readPilotBlueprintDtosFromEsi(esi, 42);
       expect.unreachable('should throw');
     } catch (error) {
       expect(error).toBeInstanceOf(NeocomBackendError);
