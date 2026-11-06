@@ -1,17 +1,8 @@
-export interface NeocomBackendErrorEntry {
-  code: string;
-  description: string;
-  field?: string;
-  container?: string;
-  value?: string;
-}
-
-export class NeocomBackendError extends Error {
-  constructor(
-    readonly httpStatus: number,
-    readonly errors: NeocomBackendErrorEntry[],
-    readonly traceId?: string,
-  ) {
-    super(errors[0]?.description ?? 'Backend error');
-  }
-}
+/**
+ * @deprecated Import from `neocom-domain` (or `@Infra/adapters/exceptions`).
+ * Re-export kept so existing relative paths keep resolving during migration.
+ */
+export {
+  NeocomBackendError,
+  type NeocomBackendErrorEntry,
+} from 'neocom-domain';

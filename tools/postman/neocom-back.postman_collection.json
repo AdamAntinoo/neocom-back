@@ -1,0 +1,976 @@
+{
+  "info": {
+    "_postman_id": "b7e2c1a0-neocom-back-adapters-001",
+    "name": "NEOCOM Back",
+    "description": "Single collection for every inbound HTTP adapter under `src/infrastructure/adapters/inbound/`.\n\nEach adapter folder has **Happy path** then **Exceptions** (documented OpenAPI / ExceptionCatalog outcomes).\n\n**OpenAPI** (`tools/openapi/`):\n- `auth-service-v0.1.0.yaml`\n- `pilot-service-v0.1.0.yaml`\n- `industry-service-v0.1.0.yaml`\n- `manufacture-service-v0.1.0.yaml`\n- `universe-service-v0.1.0.yaml`\n\n**Auth outside Postman:** log in via neocom-front, then run **Auth \u2192 Happy path \u2192 Load session from back**.\n\nEnvironment: **NEOCOM local**.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "pilotId",
+      "value": "92002067"
+    },
+    {
+      "key": "unknownPilotId",
+      "value": "1"
+    },
+    {
+      "key": "invalidPilotId",
+      "value": "not-a-number"
+    },
+    {
+      "key": "authorization",
+      "value": ""
+    },
+    {
+      "key": "neocomAccessCookie",
+      "value": ""
+    },
+    {
+      "key": "characterId",
+      "value": "92002067"
+    },
+    {
+      "key": "characterName",
+      "value": ""
+    },
+    {
+      "key": "authCode",
+      "value": ""
+    },
+    {
+      "key": "authState",
+      "value": "test-state"
+    },
+    {
+      "key": "ssoStateCookie",
+      "value": "test-state"
+    },
+    {
+      "key": "mismatchedAuthState",
+      "value": "wrong-state"
+    },
+    {
+      "key": "invalidAccessCookie",
+      "value": "expired|Pilot|1"
+    },
+    {
+      "key": "locationStationId",
+      "value": "60008494"
+    },
+    {
+      "key": "locationRegionId",
+      "value": "1000043"
+    },
+    {
+      "key": "locationUnknownId",
+      "value": "99999999"
+    },
+    {
+      "key": "locationInvalidId",
+      "value": "not-a-number"
+    },
+    {
+      "key": "locationStructureId",
+      "value": "1000000000035"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "OpenAPI: `tools/openapi/auth-service-v0.1.0.yaml` \u2014 `V1AuthController`.",
+      "item": [
+        {
+          "name": "Happy path",
+          "description": "Nominal auth flows.",
+          "item": [
+            {
+              "name": "Load session from back",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/auth/session?characterId={{characterId}}",
+                "description": "After front SSO. Fills env cookie + pilotId. Spec: GET /v1/auth/session.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('session payload', () => {",
+                      "  pm.expect(body.characterId).to.be.a('number');",
+                      "  pm.expect(body.characterName).to.be.a('string').that.is.not.empty;",
+                      "  pm.expect(body.neocomAccessCookie).to.be.a('string').that.is.not.empty;",
+                      "  pm.expect(body.cookieName).to.eql('neocom_access');",
+                      "});",
+                      "function write(key, value) {",
+                      "  pm.collectionVariables.set(key, value);",
+                      "  try { pm.environment.set(key, value); } catch (e) {}",
+                      "}",
+                      "write('neocomAccessCookie', body.neocomAccessCookie);",
+                      "write('characterId', String(body.characterId));",
+                      "write('characterName', body.characterName);",
+                      "write('pilotId', String(body.pilotId || body.characterId));",
+                      "write('authorization', body.authorization || 'present');"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Load session (first stored character)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/auth/session",
+                "description": "Same without characterId.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('session payload', () => {",
+                      "  pm.expect(body.characterId).to.be.a('number');",
+                      "  pm.expect(body.characterName).to.be.a('string').that.is.not.empty;",
+                      "  pm.expect(body.neocomAccessCookie).to.be.a('string').that.is.not.empty;",
+                      "  pm.expect(body.cookieName).to.eql('neocom_access');",
+                      "});",
+                      "function write(key, value) {",
+                      "  pm.collectionVariables.set(key, value);",
+                      "  try { pm.environment.set(key, value); } catch (e) {}",
+                      "}",
+                      "write('neocomAccessCookie', body.neocomAccessCookie);",
+                      "write('characterId', String(body.characterId));",
+                      "write('characterName', body.characterName);",
+                      "write('pilotId', String(body.pilotId || body.characterId));",
+                      "write('authorization', body.authorization || 'present');"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST callback (SSO exchange)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_sso_state={{ssoStateCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/auth/callback",
+                "description": "Requires real EVE SSO code in authCode. Sets neocom_access.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"{{authCode}}\",\n  \"state\": \"{{authState}}\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('returns characterId and characterName', () => {",
+                      "  pm.expect(body).to.have.property('characterId');",
+                      "  pm.expect(body).to.have.property('characterName');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Exceptions",
+          "description": "ExceptionCatalog outcomes for Auth.",
+          "item": [
+            {
+              "name": "400 \u2014 SSO_STATE_MISMATCH (state / cookie)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_sso_state={{ssoStateCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/auth/callback",
+                "description": "ExceptionCatalog.SSO_STATE_MISMATCH",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"any-code\",\n  \"state\": \"{{mismatchedAuthState}}\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                      "pm.test('NeocomError shape', () => {",
+                      "  const body = pm.response.json();",
+                      "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                      "  pm.expect(body.errors[0]).to.have.property('code');",
+                      "  pm.expect(body.errors[0]).to.have.property('description');",
+                      "});",
+                      "pm.test('code SSO_STATE_MISMATCH', () => pm.expect(pm.response.json().errors[0].code).to.eql('SSO_STATE_MISMATCH'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "400 \u2014 SSO_STATE_MISMATCH (missing code)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_sso_state={{ssoStateCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/auth/callback",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"state\": \"{{authState}}\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                      "pm.test('code SSO_STATE_MISMATCH', () => pm.expect(pm.response.json().errors[0].code).to.eql('SSO_STATE_MISMATCH'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "400 \u2014 INVALID_REQUEST (characterId not integer)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/auth/session?characterId={{invalidPilotId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                      "pm.test('code INVALID_REQUEST', () => pm.expect(pm.response.json().errors[0].code).to.eql('INVALID_REQUEST'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "401 \u2014 TOKEN_UNAVAILABLE (unknown characterId in store)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/auth/session?characterId={{unknownPilotId}}",
+                "description": "When store has no usable token for that id \u2014 TOKEN_UNAVAILABLE or NOT_FOUND depending on store state."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401 or 404', () => pm.expect([401,404]).to.include(pm.response.code));",
+                      "pm.test('NeocomError shape', () => {",
+                      "  const body = pm.response.json();",
+                      "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                      "  pm.expect(body.errors[0]).to.have.property('code');",
+                      "  pm.expect(body.errors[0]).to.have.property('description');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pilot",
+      "description": "OpenAPI: `tools/openapi/pilot-service-v0.1.0.yaml` \u2014 `V1PilotController`.",
+      "item": [
+        {
+          "name": "Happy path",
+          "description": "",
+          "item": [
+            {
+              "name": "200 \u2014 PublicPilotV1 (anonymous)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('jsonClass PublicPilotV1', () => pm.expect(pm.response.json().jsonClass).to.eql('PublicPilotV1'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "200 \u2014 PilotV2 (logged in)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "{{authorization}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('jsonClass PilotV2', () => pm.expect(pm.response.json().jsonClass).to.eql('PilotV2'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Exceptions",
+          "description": "",
+          "item": [
+            {
+              "name": "400 \u2014 INVALID_REQUEST (pilotId not integer)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{invalidPilotId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                      "pm.test('code INVALID_REQUEST', () => pm.expect(pm.response.json().errors[0].code).to.eql('INVALID_REQUEST'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "404 \u2014 NOT_FOUND (unknown pilot)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{unknownPilotId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                      "pm.test('code NOT_FOUND', () => pm.expect(pm.response.json().errors[0].code).to.eql('NOT_FOUND'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "500 \u2014 PILOT_SOURCE_UNAVAILABLE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
+                "description": "Only when ESI is down \u2014 skip in happy-path runs."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 500', () => pm.response.to.have.status(500));",
+                      "pm.test('code INTERNAL_SERVER_ERROR', () => pm.expect(pm.response.json().errors[0].code).to.eql('INTERNAL_SERVER_ERROR'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Industry",
+      "description": "OpenAPI: `tools/openapi/industry-service-v0.1.0.yaml` \u2014 `V1IndustryController`. Sync BlueprintV1Dto[].",
+      "item": [
+        {
+          "name": "Happy path",
+          "description": "",
+          "item": [
+            {
+              "name": "200 \u2014 BlueprintV1Dto[]",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/blueprints",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('BlueprintV1Dto array', () => {",
+                      "  pm.expect(body).to.be.an('array');",
+                      "  if (body.length) {",
+                      "    pm.expect(body[0].jsonClass).to.eql('BlueprintV1Dto');",
+                      "    pm.expect(body[0]).to.have.property('blueprintId');",
+                      "    pm.expect(body[0]).to.have.property('locationId');",
+                      "  }",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Exceptions",
+          "description": "",
+          "item": [
+            {
+              "name": "400 \u2014 INVALID_REQUEST (pilotId not integer)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{invalidPilotId}}/blueprints",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                      "pm.test('code INVALID_REQUEST', () => pm.expect(pm.response.json().errors[0].code).to.eql('INVALID_REQUEST'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "401 \u2014 TOKEN_UNAVAILABLE (invalid access cookie)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{invalidAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/blueprints",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                      "pm.test('code TOKEN_UNAVAILABLE', () => pm.expect(pm.response.json().errors[0].code).to.eql('TOKEN_UNAVAILABLE'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "404 \u2014 NOT_FOUND",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{unknownPilotId}}/blueprints",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                      "pm.test('code NOT_FOUND', () => pm.expect(pm.response.json().errors[0].code).to.eql('NOT_FOUND'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "500 \u2014 ESI_INDUSTRY_UNAVAILABLE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/blueprints",
+                "description": "Exercise when ESI industry is unreachable."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 500', () => pm.response.to.have.status(500));",
+                      "pm.test('INTERNAL_SERVER_ERROR', () => pm.expect(pm.response.json().errors[0].code).to.eql('INTERNAL_SERVER_ERROR'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Manufacture",
+      "description": "OpenAPI: `tools/openapi/manufacture-service-v0.1.0.yaml` \u2014 `V1BlueprintListController`.",
+      "item": [
+        {
+          "name": "Happy path",
+          "description": "",
+          "item": [
+            {
+              "name": "200 \u2014 ProcessedBlueprint[] list",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "{{authorization}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/manufacture/blueprints",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('ProcessedBlueprint array', () => {",
+                      "  pm.expect(body).to.be.an('array');",
+                      "  if (body.length) pm.expect(body[0].jsonClass).to.eql('ProcessedBlueprint');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "200 \u2014 SSE blueprints/events",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "text/event-stream"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/manufacture/blueprints/events",
+                "description": "SSE stream \u2014 may hang until first event; use Send and Download or short timeout."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Exceptions",
+          "description": "",
+          "item": [
+            {
+              "name": "400 \u2014 pilotId not integer (ParseIntPipe)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{invalidPilotId}}/manufacture/blueprints",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "401 \u2014 TOKEN_UNAVAILABLE (invalid access cookie on ESI miss)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{invalidAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/manufacture/blueprints",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                      "pm.test('code TOKEN_UNAVAILABLE', () => pm.expect(pm.response.json().errors[0].code).to.eql('TOKEN_UNAVAILABLE'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Universe",
+      "description": "OpenAPI: `tools/openapi/universe-service-v0.1.0.yaml` \u2014 `V1SpaceLocationController`.",
+      "item": [
+        {
+          "name": "Happy path",
+          "description": "",
+          "item": [
+            {
+              "name": "200 \u2014 SpaceLocation STATION",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/spacelocations/{{locationStationId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('SpaceLocation station', () => {",
+                      "  pm.expect(body.jsonClass).to.eql('SpaceLocation');",
+                      "  pm.expect(body.locationType).to.eql('STATION');",
+                      "  pm.expect(body.locationId).to.eql(Number(pm.variables.get('locationStationId')));",
+                      "  pm.expect(body).to.not.have.property('links');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "200 \u2014 SpaceLocation REGION",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/spacelocations/{{locationRegionId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('REGION', () => pm.expect(pm.response.json().locationType).to.eql('REGION'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Exceptions",
+          "description": "",
+          "item": [
+            {
+              "name": "400 \u2014 locationId not integer (ParseIntPipe)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/spacelocations/{{locationInvalidId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "401 \u2014 UNAUTHORIZED (structure without cookie)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/spacelocations/{{locationStructureId}}",
+                "description": "LOC-135 \u2014 structure id range without neocom_access."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                      "pm.test('code UNAUTHORIZED', () => pm.expect(pm.response.json().errors[0].code).to.eql('UNAUTHORIZED'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "404 \u2014 LOCATION_NOT_FOUND",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/spacelocations/{{locationUnknownId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                      "pm.test('code LOCATION_NOT_FOUND', () => pm.expect(pm.response.json().errors[0].code).to.eql('LOCATION_NOT_FOUND'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

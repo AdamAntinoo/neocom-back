@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: NEOCOM Manufacture Adapter API
+  version: 0.1.0
+  description: |
+    ### Manufacture inbound adapter (`V1BlueprintListController`)
+
+    |||
+    |------------------|------------------------------------------|
+    |**System:**|back|
+    |**Adapter:**|manufacture / blueprint-list|
+    |**Controller:**|`src/infrastructure/adapters/inbound/industry/v1-blueprint-list.controller.ts`|
+    ---
+
+    Async manufacture blueprint list + SSE enrichment push (BASSE).
+    Distinct from sync Industry `GET /v1/pilots/{pilotId}/blueprints`.
+
+    **Error body:** Nest `ParseIntPipe` **400** for non-integer `pilotId`.
+    Authenticated ESI paths may surface `TOKEN_UNAVAILABLE` (**401**) via cookie middleware
+    when `neocom_access` is present but invalid.
+
+    ## Changelog
+
+    * `0.1.0` — List + SSE events for manufacture blueprints.
+tags:
+  - name: manufacture
+    description: Async blueprint list and SSE.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+paths:
+  /v1/pilots/{pilotId}/manufacture/blueprints:
+    get:
+      tags: [manufacture]
+      operationId: listManufactureBlueprintsV1
+      summary: Manufacture blueprint list (async)
+      description: |
+        Returns partial/stale `ProcessedBlueprint` rows immediately; enrichment continues
+        in the background and is pushed on the SSE channel.
+
+        **Responses:**
+        * **200** — `ProcessedBlueprint[]`
+        * **400** — `pilotId` not an integer
+        * **401** — invalid access cookie during ESI miss path
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: Cookie
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List (may be partial until enrichment).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessedBlueprint"
+        "400":
+          description: Nest ParseIntPipe — pilotId is not an integer.
+        "401":
+          $ref: "#/components/responses/TokenUnavailableResponse"
+  /v1/pilots/{pilotId}/manufacture/blueprints/events:
+    get:
+      tags: [manufacture]
+      operationId: manufactureBlueprintEventsV1
+      summary: SSE stream for manufacture enrichment
+      description: |
+        Server-Sent Events (`text/event-stream`). Events carry type `node-updated`
+        with `{ nodeId, node }` when enrichment completes (BASSE-001 / BASSE-007).
+
+        **Responses:**
+        * **200** — event stream
+        * **400** — `pilotId` not an integer
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: SSE stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          description: Nest ParseIntPipe — pilotId is not an integer.
+components:
+  schemas:
+    ProcessedBlueprint:
+      type: object
+      required: [jsonClass, blueprintId, name, ready]
+      properties:
+        jsonClass:
+          type: string
+          enum: [ProcessedBlueprint]
+        blueprintId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        ready:
+          type: boolean
+        manufactureIndex:
+          type: number
+          nullable: true
+        marketCost:
+          type: number
+          nullable: true
+        manufactureCost:
+          type: number
+          nullable: true
+    ErrorsInner:
+      type: object
+      required: [code, description]
+      properties:
+        code: { type: string }
+        description: { type: string }
+        field: { type: string }
+        container: { type: string }
+        value: { type: string }
+    NeocomError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorsInner"
+  responses:
+    TokenUnavailableResponse:
+      description: `ExceptionCatalog.TOKEN_UNAVAILABLE`
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            TokenUnavailable:
+              value:
+                errors:
+                  - code: "TOKEN_UNAVAILABLE"
+                    description: "The access token could not be replaced."

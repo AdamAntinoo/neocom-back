@@ -1,5 +1,10 @@
 .DS_Store
 
+# macOS Finder / sync conflict copies ("Name 2.ext") — never commit
+* 2.*
+* 2
+.env 2.application
+
 # Nestjs specific
 /dist
 /node_modules
@@ -17,11 +22,18 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# dotenv environment variable files
+# dotenv environment variable files (local overlays; committed templates are .env.application / .env.esisso / .env.version)
 .env
 .env.development
 .env.test
 .env.production
+.env.local
+.env.*.local
+
+# ESI SSO token store (BACK-014)
+/tokens.json
+/tokens.json.lock
+/tokens.json.*.lock
 
 # temp directory
 .temp
@@ -34,3 +46,5 @@ src/generated/pilot/package.json
 src/generated/pilot/README.md
 src/generated/pilot/tslint.json
 src/generated/pilot/variables.ts
+
+.env.esisso

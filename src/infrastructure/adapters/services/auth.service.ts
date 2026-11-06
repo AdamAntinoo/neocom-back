@@ -1,0 +1,148 @@
+import { EsiTokenManager } from '@lgriffin/esi.ts';
+import { Inject, Injectable } from '@nestjs/common';
+import type { Response } from 'express';
+import type { NeocomBackendError } from 'neocom-domain';
+import {
+  ExceptionCatalog,
+  exceptionPayload,
+} from '@Infra/adapters/exceptions/index.js';
+import {
+  clearLoginCookies,
+  formatAccessCookie,
+  NEOCOM_ACCESS,
+  NEOCOM_SSO_STATE,
+  parseAccessCookie,
+  setAccessCookie,
+  type AccessCookieValue,
+} from '@Infra/adapters/services/auth-cookies.service.js';
+import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
+
+@Injectable()
+export class AuthService {
+  constructor(@Inject(ESI_TOKEN_MANAGER) private readonly tokens: EsiTokenManager) {}
+
+  /** BACK-015 — exchange code on matching state and set `neocom_access`. */
+  async exchangeCode(
+    code: string,
+    state: string,
+    ssoStateCookie: string | undefined,
+    res: Response,
+  ): Promise<{ characterId: number; characterName: string }> {
+    if (!code || !state || state !== ssoStateCookie) {
+      throw ExceptionCatalog.SSO_STATE_MISMATCH.doThrow(
+        exceptionPayload().field('state').container('body').value(state).build(),
+      );
+    }
+
+    const stored = await this.tokens.addCharacter(code);
+    const accessToken = await this.tokens.getToken(stored.characterId);
+    setAccessCookie(res, {
+      accessToken,
+      characterName: stored.characterName,
+      characterId: stored.characterId,
+    });
+    clearLoginCookies(res);
+    return { characterId: stored.characterId, characterName: stored.characterName };
+  }
+
+  /**
+   * BACK-016 / BACK-017 — reuse or refresh token for the character in the cookie.
+   * Rewrites `neocom_access`; returns 401 when replacement fails.
+   */
+  async refreshAccessCookie(rawCookie: unknown, res: Response): Promise<AccessCookieValue> {
+    const parsed = parseAccessCookie(rawCookie);
+    if (parsed == null) {
+      throw unauthorized();
+    }
+    try {
+      const accessToken = await this.tokens.getToken(parsed.characterId);
+      const stored = await this.tokens.getStoredToken(parsed.characterId);
+      const characterName = stored?.characterName ?? parsed.characterName;
+      const next = {
+        accessToken,
+        characterName,
+        characterId: parsed.characterId,
+      };
+      setAccessCookie(res, next);
+      return next;
+    } catch {
+      throw unauthorized();
+    }
+  }
+
+  /**
+   * Local tooling — build `neocom_access` from `tokens.json` after login outside Postman
+   * (front/browser SSO). Optional `characterId` selects among stored characters.
+   */
+  async bindStoredSession(
+    characterId: number | undefined,
+    res: Response,
+  ): Promise<StoredSessionPayload> {
+    const characters = await this.tokens.listCharacters();
+    if (!characters.length) {
+      throw ExceptionCatalog.NOT_FOUND.doThrow(
+        exceptionPayload()
+          .field('tokens')
+          .container('storage')
+          .value('No characters in tokens.json — log in via the front first.')
+          .build(),
+      );
+    }
+
+    const selected =
+      characterId != null
+        ? characters.find((c) => c.characterId === characterId)
+        : characters[0];
+    if (selected == null) {
+      throw ExceptionCatalog.NOT_FOUND.doThrow(
+        exceptionPayload()
+          .field('characterId')
+          .container('query')
+          .value(String(characterId))
+          .build(),
+      );
+    }
+
+    try {
+      const accessToken = await this.tokens.getToken(selected.characterId);
+      const stored = await this.tokens.getStoredToken(selected.characterId);
+      const characterName = stored?.characterName ?? selected.characterName;
+      const value: AccessCookieValue = {
+        accessToken,
+        characterName,
+        characterId: selected.characterId,
+      };
+      setAccessCookie(res, value);
+      return {
+        characterId: value.characterId,
+        characterName: value.characterName,
+        pilotId: value.characterId,
+        cookieName: NEOCOM_ACCESS,
+        neocomAccessCookie: formatAccessCookie(value),
+        authorization: 'present',
+        characters: characters.map((c) => ({
+          characterId: c.characterId,
+          characterName: c.characterName,
+        })),
+      };
+    } catch {
+      throw unauthorized();
+    }
+  }
+}
+
+export type StoredSessionPayload = {
+  characterId: number;
+  characterName: string;
+  pilotId: number;
+  cookieName: string;
+  neocomAccessCookie: string;
+  authorization: string;
+  characters: Array<{ characterId: number; characterName: string }>;
+};
+
+function unauthorized(): NeocomBackendError {
+  return ExceptionCatalog.TOKEN_UNAVAILABLE.doThrow();
+}
+
+export { NEOCOM_SSO_STATE };

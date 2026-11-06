@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Re-apply Flyway after the commit (covers migrations just recorded in history).
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec bash "${ROOT}/tools/db/git-sync.sh"

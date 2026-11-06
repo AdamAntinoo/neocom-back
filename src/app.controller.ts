@@ -1,12 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service.js';
+import { AppService, type ReadinessReport } from './app.service.js';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  /** Readiness probe — version, environment, and log level. */
+  @Get('ready')
+  getReadiness(): ReadinessReport {
+    return this.appService.getReadiness();
   }
 }

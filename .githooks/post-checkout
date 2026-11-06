@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Sync schema when switching branches that may carry different Flyway versions.
+# $3 is 1 for branch checkout, 0 for file checkout — only sync on branch change.
+if [[ "${3:-0}" != "1" ]]; then
+  exit 0
+fi
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec bash "${ROOT}/tools/db/git-sync.sh"

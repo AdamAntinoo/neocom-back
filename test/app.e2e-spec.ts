@@ -16,14 +16,21 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-
   afterEach(async () => {
     await app.close();
+  });
+
+  it('/ready (GET) returns readiness with version, environment, and logLevel', () => {
+    return request(app.getHttpServer())
+      .get('/ready')
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          status: 'ready',
+          version: expect.any(String),
+          environment: expect.any(String),
+          logLevel: expect.any(String),
+        });
+      });
   });
 });
