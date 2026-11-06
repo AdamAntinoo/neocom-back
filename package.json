@@ -51,7 +51,7 @@
     "bullmq": "^6.3.16",
     "cookie-parser": "^1.4.7",
     "ioredis": "^5.11.1",
-    "neocom-domain": "file:../neocom-domain",
+    "neocom-domain": "0.29.3",
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
