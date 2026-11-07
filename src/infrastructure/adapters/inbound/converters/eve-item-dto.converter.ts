@@ -3,6 +3,9 @@ import type { SpaceLocation } from '@Domain/spacelocation/space-location.js';
 import { BlueprintV1Dto } from '@Infra/adapters/inbound/dto/blueprint-v1.dto.js';
 import { EveItemV1Dto } from '@Infra/adapters/inbound/dto/eve-item-v1.dto.js';
 import { SpaceLocationV1Dto } from '@Infra/adapters/inbound/dto/space-location-v1.dto.js';
+import { LayerLogger } from '@Infra/config/layer-logging.js';
+
+const log = LayerLogger.for('outbound', 'EveItemDtoConverter');
 
 /** One element of {@link EsiClient.characters.getCharacterBlueprints}. */
 export type EsiCharacterBlueprint = Awaited<
@@ -27,7 +30,7 @@ export class EveItemDtoConverter {
 
   /** ESI library character blueprint → {@link BlueprintV1Dto}. */
   static toBlueprintV1Dto(row: EsiCharacterBlueprint): BlueprintV1Dto {
-    return new BlueprintV1Dto({
+    const dto = new BlueprintV1Dto({
       blueprintId: row.item_id,
       blueprintTypeId: row.type_id,
       blueprintTypeName: '',
@@ -40,11 +43,18 @@ export class EveItemDtoConverter {
       locationId: row.location_id,
       locationFlag: row.location_flag,
     });
+    log.dtoConverted({
+      from: 'EsiCharacterBlueprint',
+      to: 'BlueprintV1Dto',
+      ids: [dto.blueprintId],
+      fields: { blueprintTypeId: dto.blueprintTypeId, locationId: dto.locationId },
+    });
+    return dto;
   }
 
   /** Catalog {@link SpaceLocation} → {@link SpaceLocationV1Dto}. */
   static toSpaceLocationV1Dto(location: SpaceLocation): SpaceLocationV1Dto {
-    return new SpaceLocationV1Dto({
+    const dto = new SpaceLocationV1Dto({
       locationType: location.locationType,
       locationId: location.locationId,
       regionId: location.regionId,
@@ -64,6 +74,13 @@ export class EveItemDtoConverter {
       corporationId: location.corporationId,
       corporationName: location.corporationName,
     });
+    log.dtoConverted({
+      from: 'SpaceLocation',
+      to: 'SpaceLocationV1Dto',
+      ids: [dto.locationId],
+      fields: { locationType: dto.locationType },
+    });
+    return dto;
   }
 
   /**
@@ -71,7 +88,7 @@ export class EveItemDtoConverter {
    * Does not resolve group/category/`iconUrl` — use {@link withExpansions}.
    */
   static toEveItemV1Dto(type: EsiUniverseType): EveItemV1Dto {
-    return new EveItemV1Dto({
+    const dto = new EveItemV1Dto({
       typeId: type.type_id,
       name: type.name,
       description: type.description,
@@ -107,6 +124,13 @@ export class EveItemDtoConverter {
       ...(type.radius !== undefined ? { radius: type.radius } : {}),
       ...(type.volume !== undefined ? { volume: type.volume } : {}),
     });
+    log.dtoConverted({
+      from: 'EsiUniverseType',
+      to: 'EveItemV1Dto',
+      ids: [dto.typeId],
+      fields: { name: dto.name, groupId: dto.groupId },
+    });
+    return dto;
   }
 
   /**

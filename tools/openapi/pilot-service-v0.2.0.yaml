@@ -1,0 +1,656 @@
+openapi: 3.0.3
+info:
+  title: NEOCOM Pilot Adapter API
+  version: 0.2.0
+  description: |
+    ### Pilot inbound adapter (`V1PilotController`)
+
+    |||
+    |------------------|------------------------------------------|
+    |**System:**|back|
+    |**Adapter:**|pilot|
+    |**Controller:**|`src/infrastructure/adapters/inbound/pilot/v1-pilot.controller.ts`|
+    ---
+
+    `GET /v1/pilots/{pilotId}` returns `PublicPilotV1` when anonymous, or `PilotV2` when
+    logged in (non-empty `Authorization` header — value not validated as a token).
+
+    Private fields are **omitted** when the caller is not logged in:
+    `totalSkillpoints`, `walletBalance`, `currentShipName`, `currentShipTypeName`, `lastKnownLocation`.
+
+    Assets (AST-007…014):
+    * `GET /v1/pilots/{pilotId}/assets` — authenticated full list (`EveAssetV1Dto` /
+      `LocatedAssetContainerV1Dto`); requires `Cookie: neocom_access=…`
+    * `GET /v1/pilots/{pilotId}/assets/locations/{locationId}` — same auth; filters the
+      full list to assets whose `locationId` matches
+
+    Expanded assets are write-through cached in Redis under `pilot/asset` (TTL 60 minutes).
+
+    **Error body:** `NeocomError` via ExceptionCatalog.
+
+    ## Changelog
+
+    * `0.2.0` — Authenticated pilot assets list + by-location filter; EveAsset /
+      LocatedAssetContainer interchange; outcomes 200 / 400 / 401 / 404 / 500.
+    * `0.1.0` — Pilot get; NeocomError outcomes; domain schema names (`PublicPilotV1` / `PilotV2`).
+tags:
+  - name: pilot
+    description: Pilot public/private view and authenticated assets.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+paths:
+  /v1/pilots/{pilotId}:
+    get:
+      tags: [pilot]
+      operationId: getPilot
+      summary: Pilot
+      description: |
+        JSON view of the Pilot model for `pilotId` at `GET /v1/pilots/{pilotId}`.
+
+        A non-empty `Authorization` header means the caller is logged in.
+        The header value is not validated here.
+
+        **Response semantics:**
+        * **200** — `PilotV2`.
+        * **400** — `pilotId` is not an integer.
+        * **404** — no pilot exists for `pilotId`.
+        * **500** — the pilot source is not available.
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          description: >
+            Pilot identifier.
+          schema:
+            type: integer
+            format: int32
+      responses:
+        "200":
+          description: |
+            `PublicPilotV1` when anonymous; `PilotV2` when logged in (`neocom-domain`).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PublicPilotV1"
+                  - $ref: "#/components/schemas/PilotV2"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+
+  /v1/pilots/{pilotId}/assets:
+    get:
+      tags: [pilot]
+      operationId: getPilotAssets
+      summary: List pilot assets (authenticated)
+      description: |
+        Authenticated full list of the pilot’s assets (AST-007…009, AST-014).
+
+        Requires `Cookie: neocom_access=…`. ESI character assets + personal names are
+        mapped to `EveAssetV1Dto` / `LocatedAssetContainerV1Dto` (nested `item` as
+        `PricedItemV1Dto`; nested `location` as `EveLocationV1Dto` when
+        `locationType` ≠ `item`). Containers nest children whose ESI `location_type`
+        is `item`. Redis write-through under `pilot/asset` (TTL 60 minutes).
+
+        **Responses:**
+        * **200** — array of `EveAssetV1Dto` | `LocatedAssetContainerV1Dto` (forest roots)
+        * **400** — path `pilotId` not an integer (`ParseIntPipe`)
+        * **401** — `UNAUTHORIZED` (`ASSETS_AUTH_REQUIRED`) without access cookie
+        * **401** — `TOKEN_UNAVAILABLE` when the ESI access token cannot be obtained
+        * **404** — `ASSETS_NOT_FOUND` when ESI reports no assets for the character
+        * **500** — `INTERNAL_SERVER_ERROR` (`ESI_ASSETS_UNAVAILABLE`) when ESI assets is down
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          description: Pilot / character id whose assets to list.
+          schema:
+            type: integer
+            format: int32
+        - name: Cookie
+          in: header
+          required: true
+          description: 'neocom_access=…' pilot access cookie (required).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Expanded asset forest (roots only; containers carry nested contents).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/EveAssetV1Dto"
+                    - $ref: "#/components/schemas/LocatedAssetContainerV1Dto"
+              examples:
+                StationHangarWithContents:
+                  $ref: "#/components/examples/PilotAssetsList"
+        "400":
+          description: Nest ParseIntPipe — pilotId is not an integer.
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          description: Missing access cookie or ESI token unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NeocomError"
+              examples:
+                AssetsAuthRequired:
+                  $ref: "#/components/examples/AssetsAuthRequired"
+                TokenUnavailable:
+                  $ref: "#/components/examples/TokenUnavailable"
+        "404":
+          $ref: "#/components/responses/AssetsNotFoundResponse"
+        "500":
+          $ref: "#/components/responses/EsiAssetsUnavailableResponse"
+
+  /v1/pilots/{pilotId}/assets/locations/{locationId}:
+    get:
+      tags: [pilot]
+      operationId: getPilotAssetsByLocation
+      summary: List pilot assets at one location (authenticated)
+      description: |
+        Secondary authenticated endpoint (AST-013). Obtains the full pilot asset list
+        (same path as `getPilotAssets`, including Redis warm cache) then **filters** to
+        root assets whose `locationId` equals the path `locationId`.
+
+        **Responses:**
+        * **200** — filtered array (may be empty when no assets match that location)
+        * **400** — path `pilotId` or `locationId` not an integer (`ParseIntPipe`)
+        * **401** — `UNAUTHORIZED` (`ASSETS_AUTH_REQUIRED`) without access cookie
+        * **401** — `TOKEN_UNAVAILABLE` when the ESI access token cannot be obtained
+        * **404** — `ASSETS_NOT_FOUND` when ESI reports no assets for the character
+        * **500** — `INTERNAL_SERVER_ERROR` (`ESI_ASSETS_UNAVAILABLE`) when ESI assets is down
+      parameters:
+        - name: pilotId
+          in: path
+          required: true
+          description: Pilot / character id.
+          schema:
+            type: integer
+            format: int32
+        - name: locationId
+          in: path
+          required: true
+          description: >
+            Location identity to match against each root asset’s `locationId`
+            (e.g. station id `60003760`).
+          schema:
+            type: integer
+            format: int64
+            example: 60003760
+        - name: Cookie
+          in: header
+          required: true
+          description: 'neocom_access=…' pilot access cookie (required).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: |
+            Assets whose `locationId` matches the path parameter (subset of the full list).
+            Empty array when none match.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/EveAssetV1Dto"
+                    - $ref: "#/components/schemas/LocatedAssetContainerV1Dto"
+              examples:
+                FilteredToStation:
+                  $ref: "#/components/examples/PilotAssetsByLocation"
+                EmptyMatch:
+                  summary: No assets at that location
+                  value: []
+        "400":
+          description: Nest ParseIntPipe — pilotId or locationId is not an integer.
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          description: Missing access cookie or ESI token unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NeocomError"
+              examples:
+                AssetsAuthRequired:
+                  $ref: "#/components/examples/AssetsAuthRequired"
+                TokenUnavailable:
+                  $ref: "#/components/examples/TokenUnavailable"
+        "404":
+          $ref: "#/components/responses/AssetsNotFoundResponse"
+        "500":
+          $ref: "#/components/responses/EsiAssetsUnavailableResponse"
+
+components:
+  schemas:
+    PilotV2:
+      allOf:
+        - $ref: "#/components/schemas/PublicPilotV1"
+        - type: object
+          description: |
+            Authenticated pilot (`neocom-domain` PilotV2). Includes private fields.
+          properties:
+            jsonClass:
+              type: string
+              enum: [PilotV2]
+            totalSkillpoints:
+              type: number
+            walletBalance:
+              type: number
+            currentShipName:
+              type: string
+            currentShipTypeName:
+              type: string
+            lastKnownLocation:
+              $ref: "#/components/schemas/SpaceLocationV1"
+            alliance:
+              $ref: "#/components/schemas/PilotAllianceSummary"
+    PublicCorporationSummary:
+      type: object
+      description: |
+        Public corporation summary on a pilot (`neocom-domain`).
+      properties:
+        corporationId:
+          type: number
+        name:
+          type: string
+    PilotAllianceSummary:
+      type: object
+      description: |
+        Alliance summary on authenticated pilot (`neocom-domain`).
+      properties:
+        allianceId:
+          type: number
+        name:
+          type: string
+    PilotNameSummary:
+      type: object
+      description: |
+        Named race / ancestry / bloodline summary (`neocom-domain`).
+      properties:
+        name:
+          type: string
+          required: true
+    PublicPilotV1:
+      type: object
+      description: |
+        Public-only pilot (`neocom-domain`). Returned when the caller is not logged in.
+      required:
+        - pilotId
+        - jsonClass
+      properties:
+        jsonClass:
+          type: string
+          enum: [PublicPilotV1]
+        pilotId:
+          type: number
+        name:
+          type: string
+        corporation:
+          $ref: "#/components/schemas/PublicCorporationSummary"
+        birthday:
+          type: string
+        description:
+          type: string
+        gender:
+          type: string
+        securityStatus:
+          type: number
+        url4Icon:
+          type: string
+        raceData:
+          $ref: "#/components/schemas/PilotNameSummary"
+        ancestryData:
+          $ref: "#/components/schemas/PilotNameSummary"
+        bloodlineData:
+          $ref: "#/components/schemas/PilotNameSummary"
+    SpaceLocationV1:
+      type: object
+      description: |
+        Space location lookup (`neocom-domain` SpaceLocationV1).
+
+    EveLocationV1Dto:
+      type: object
+      description: |
+        Nested place on an asset when `locationType` ≠ `item` (back DTO).
+      properties:
+        jsonClass:
+          type: string
+          enum: [EveLocationV1Dto]
+        locationType:
+          type: string
+        locationId:
+          type: number
+        stationId:
+          type: number
+        stationName:
+          type: string
+        solarSystemId:
+          type: number
+        solarSystemName:
+          type: string
+        marketHub:
+          type: boolean
+
+    PricedItemV1Dto:
+      type: object
+      description: |
+        Nested type expansion on an asset (`EveAssetV1Dto.item`) — EveItem fields plus hub prices.
+      required:
+        - jsonClass
+        - typeId
+        - marketHub
+      properties:
+        jsonClass:
+          type: string
+          enum: [PricedItemV1Dto]
+        typeId:
+          type: number
+        name:
+          type: string
+        buyPrice:
+          type: number
+        sellPrice:
+          type: number
+        marketHub:
+          $ref: "#/components/schemas/EveLocationV1Dto"
+
+    EveAssetV1Dto:
+      type: object
+      description: |
+        Pilot-owned asset instance interchange (back `EveAssetV1Dto`, AST-001…006).
+      required:
+        - jsonClass
+        - itemId
+        - typeId
+        - quantity
+        - locationId
+        - locationType
+        - locationFlag
+        - isSingleton
+        - ownerPilotId
+        - item
+      properties:
+        jsonClass:
+          type: string
+          enum: [EveAssetV1Dto]
+        itemId:
+          type: number
+        typeId:
+          type: number
+        quantity:
+          type: number
+        locationId:
+          type: number
+        locationType:
+          type: string
+          description: ESI location_type (`station`, `item`, …).
+        locationFlag:
+          type: string
+        isSingleton:
+          type: boolean
+        isBlueprintCopy:
+          type: boolean
+        name:
+          type: string
+          description: Personal name from ESI assets/names (omitted when absent / literal None).
+        ownerPilotId:
+          type: number
+        item:
+          $ref: "#/components/schemas/PricedItemV1Dto"
+        location:
+          $ref: "#/components/schemas/EveLocationV1Dto"
+
+    LocatedAssetContainerV1Dto:
+      allOf:
+        - $ref: "#/components/schemas/EveAssetV1Dto"
+        - type: object
+          description: |
+            Asset that contains other assets (AST-010…012). `jsonClass` is
+            `LocatedAssetContainerV1Dto`; `contents` is nested asset/container objects.
+          required:
+            - contents
+          properties:
+            jsonClass:
+              type: string
+              enum: [LocatedAssetContainerV1Dto]
+            contents:
+              type: array
+              items:
+                oneOf:
+                  - $ref: "#/components/schemas/EveAssetV1Dto"
+                  - $ref: "#/components/schemas/LocatedAssetContainerV1Dto"
+
+    ErrorsInner:
+      description: |
+        Single validation or backend error entry.
+      type: object
+      required:
+        - code
+        - description
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        description:
+          type: string
+          example: "No pilot exists for this identifier."
+        field:
+          type: string
+          example: "pilotId"
+        container:
+          type: string
+          example: "path"
+        value:
+          type: string
+          example: "93813310"
+
+    NeocomError:
+      description: |
+        Error response with one or more `errors` entries. `NeocomBackendError` serializes to this shape.
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorsInner"
+        traceId:
+          type: string
+          description: |
+            Optional correlation trace identifier when the upper layer has one.
+      example:
+        errors:
+          - code: "NOT_FOUND"
+            description: "No pilot exists for this identifier."
+            field: "pilotId"
+            container: "path"
+            value: "93813310"
+
+  examples:
+    PilotAssetsList:
+      summary: Station hangar asset with nested contents
+      value:
+        - jsonClass: LocatedAssetContainerV1Dto
+          itemId: 1019725660401
+          typeId: 620
+          quantity: 1
+          locationId: 60003760
+          locationType: station
+          locationFlag: Hangar
+          isSingleton: true
+          ownerPilotId: 92002067
+          item:
+            jsonClass: PricedItemV1Dto
+            typeId: 620
+            name: Example ship
+            buyPrice: 0
+            sellPrice: 0
+            marketHub:
+              jsonClass: EveLocationV1Dto
+              locationType: STATION
+              locationId: 60003760
+          location:
+            jsonClass: EveLocationV1Dto
+            locationType: STATION
+            locationId: 60003760
+            stationId: 60003760
+          contents:
+            - jsonClass: EveAssetV1Dto
+              itemId: 1011917342715
+              typeId: 38
+              quantity: 200
+              locationId: 1019725660401
+              locationType: item
+              locationFlag: AutoFit
+              isSingleton: false
+              ownerPilotId: 92002067
+              item:
+                jsonClass: PricedItemV1Dto
+                typeId: 38
+                name: Example module
+                buyPrice: 1
+                sellPrice: 2
+                marketHub:
+                  jsonClass: EveLocationV1Dto
+                  locationId: 60003760
+    PilotAssetsByLocation:
+      summary: Roots filtered to Jita 4-4 station id
+      value:
+        - jsonClass: EveAssetV1Dto
+          itemId: 1023655636930
+          typeId: 620
+          quantity: 1
+          locationId: 60003760
+          locationType: station
+          locationFlag: Hangar
+          isSingleton: true
+          ownerPilotId: 92002067
+          item:
+            jsonClass: PricedItemV1Dto
+            typeId: 620
+            marketHub:
+              jsonClass: EveLocationV1Dto
+              locationId: 60003760
+          location:
+            jsonClass: EveLocationV1Dto
+            locationType: STATION
+            locationId: 60003760
+    AssetsAuthRequired:
+      summary: Missing neocom_access cookie
+      value:
+        errors:
+          - code: "UNAUTHORIZED"
+            description: "Access cookie / session is required to get assets for pilot id 92002067."
+            field: "cookie"
+            container: "header"
+            value: "92002067"
+    TokenUnavailable:
+      summary: ESI access token could not be obtained
+      value:
+        errors:
+          - code: "TOKEN_UNAVAILABLE"
+            description: "The access token could not be replaced."
+    AssetsNotFound:
+      summary: ESI reports no assets for the character
+      value:
+        errors:
+          - code: "ASSETS_NOT_FOUND"
+            description: "No assets for pilot id 92002067."
+            field: "pilotId"
+            container: "path"
+            value: "92002067"
+    EsiAssetsUnavailable:
+      summary: ESI assets source unavailable
+      value:
+        errors:
+          - code: "INTERNAL_SERVER_ERROR"
+            description: "ESI assets source is not available."
+
+  responses:
+    BadRequestResponse:
+      description: |
+        `pilotId` is missing or not an integer.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            InvalidPilotId:
+              summary: pilotId is not an integer
+              value:
+                errors:
+                  - code: "INVALID_REQUEST"
+                    description: "pilotId must be an integer."
+                    field: "pilotId"
+                    container: "path"
+                    value: "not-a-number"
+    NotFoundResponse:
+      description: |
+        No pilot exists for `pilotId`.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            PilotNotFound:
+              summary: Unknown pilot identifier
+              value:
+                errors:
+                  - code: "NOT_FOUND"
+                    description: "No pilot exists for this identifier."
+                    field: "pilotId"
+                    container: "path"
+                    value: "93813310"
+    InternalServerErrorResponse:
+      description: |
+        The pilot source is not available, or another unexpected failure occurred.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            PilotSourceUnavailable:
+              summary: Pilot source is not available
+              value:
+                errors:
+                  - code: "INTERNAL_SERVER_ERROR"
+                    description: "The pilot source is not available."
+            UnexpectedInternalServerError:
+              value:
+                errors:
+                  - code: "INTERNAL_SERVER_ERROR"
+                    description: "Unexpected error produced during the request processing."
+    AssetsNotFoundResponse:
+      description: |
+        ESI character assets returned not found for `pilotId`.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            AssetsNotFound:
+              $ref: "#/components/examples/AssetsNotFound"
+    EsiAssetsUnavailableResponse:
+      description: |
+        ESI assets source is not available (network / server error).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            EsiAssetsUnavailable:
+              $ref: "#/components/examples/EsiAssetsUnavailable"

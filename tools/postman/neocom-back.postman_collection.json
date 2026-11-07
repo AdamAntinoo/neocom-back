@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "98109c51-65b1-416b-aeb9-5f914a90cc35",
     "name": "NEOCOM Back",
-    "description": "Inbound adapters for neocom-back. Universe includes spacelocations, eveitems (public), and pricedeveitems (authenticated). Import with tools/postman/neocom-local.postman_environment.json. Collection revision id: 98109c51-65b1-416b-aeb9-5f914a90cc35.",
+    "description": "Inbound adapters for neocom-back. Pilot includes get-pilot plus authenticated assets list and by-location filter. Universe includes spacelocations, eveitems (public), and pricedeveitems (authenticated). Import with tools/postman/neocom-local.postman_environment.json. Collection revision id: 98109c51-65b1-416b-aeb9-5f914a90cc35.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -82,7 +82,7 @@
   "item": [
     {
       "name": "Auth",
-      "description": "OpenAPI: `tools/openapi/auth-service-v0.1.0.yaml` \u2014 `V1AuthController`.",
+      "description": "OpenAPI: `tools/openapi/auth-service-v0.1.0.yaml` — `V1AuthController`.",
       "item": [
         {
           "name": "Happy path",
@@ -224,7 +224,7 @@
           "description": "ExceptionCatalog outcomes for Auth.",
           "item": [
             {
-              "name": "400 \u2014 SSO_STATE_MISMATCH (state / cookie)",
+              "name": "400 — SSO_STATE_MISMATCH (state / cookie)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -265,7 +265,7 @@
               "response": []
             },
             {
-              "name": "400 \u2014 SSO_STATE_MISMATCH (missing code)",
+              "name": "400 — SSO_STATE_MISMATCH (missing code)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -300,7 +300,7 @@
               "response": []
             },
             {
-              "name": "400 \u2014 INVALID_REQUEST (characterId not integer)",
+              "name": "400 — INVALID_REQUEST (characterId not integer)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -327,7 +327,7 @@
               "response": []
             },
             {
-              "name": "401 \u2014 TOKEN_UNAVAILABLE (unknown characterId in store)",
+              "name": "401 — TOKEN_UNAVAILABLE (unknown characterId in store)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -337,7 +337,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/v1/auth/session?characterId={{unknownPilotId}}",
-                "description": "When store has no usable token for that id \u2014 TOKEN_UNAVAILABLE or NOT_FOUND depending on store state."
+                "description": "When store has no usable token for that id — TOKEN_UNAVAILABLE or NOT_FOUND depending on store state."
               },
               "event": [
                 {
@@ -364,14 +364,14 @@
     },
     {
       "name": "Pilot",
-      "description": "OpenAPI: `tools/openapi/pilot-service-v0.1.0.yaml` \u2014 `V1PilotController`.",
+      "description": "OpenAPI: `tools/openapi/pilot-service-v0.2.0.yaml` — `V1PilotController` (get pilot + authenticated assets).",
       "item": [
         {
           "name": "Happy path",
           "description": "",
           "item": [
             {
-              "name": "200 \u2014 PublicPilotV1 (anonymous)",
+              "name": "200 — PublicPilotV1 (anonymous)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -383,6 +383,7 @@
                 "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
                 "description": ""
               },
+              "response": [],
               "event": [
                 {
                   "listen": "test",
@@ -394,11 +395,10 @@
                     ]
                   }
                 }
-              ],
-              "response": []
+              ]
             },
             {
-              "name": "200 \u2014 PilotV2 (logged in)",
+              "name": "200 — PilotV2 (logged in)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -414,6 +414,7 @@
                 "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
                 "description": ""
               },
+              "response": [],
               "event": [
                 {
                   "listen": "test",
@@ -425,8 +426,83 @@
                     ]
                   }
                 }
-              ],
-              "response": []
+              ]
+            },
+            {
+              "name": "200 — Pilot assets list (authenticated)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/assets",
+                "description": "AST-007 — full expanded asset forest. Requires Auth → Load session from back first."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('array of EveAsset nodes', () => {",
+                      "  pm.expect(body).to.be.an('array');",
+                      "  if (body.length) {",
+                      "    pm.expect(['EveAssetV1Dto','LocatedAssetContainerV1Dto']).to.include(body[0].jsonClass);",
+                      "    pm.expect(body[0]).to.have.property('itemId');",
+                      "    pm.expect(body[0]).to.have.property('item');",
+                      "    pm.expect(body[0].item.jsonClass).to.eql('PricedItemV1Dto');",
+                      "  }",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "200 — Pilot assets by location (authenticated)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/assets/locations/{{assetLocationId}}",
+                "description": "AST-013 — filters full list to roots whose locationId matches. Default assetLocationId is Jita 4-4 (60003760)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "const loc = Number(pm.environment.get('assetLocationId'));",
+                      "pm.test('filtered array', () => {",
+                      "  pm.expect(body).to.be.an('array');",
+                      "  body.forEach((n) => pm.expect(n.locationId).to.eql(loc));",
+                      "});"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         },
@@ -435,7 +511,7 @@
           "description": "",
           "item": [
             {
-              "name": "400 \u2014 INVALID_REQUEST (pilotId not integer)",
+              "name": "400 — INVALID_REQUEST (pilotId not integer)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -447,6 +523,7 @@
                 "url": "{{baseUrl}}/v1/pilots/{{invalidPilotId}}",
                 "description": ""
               },
+              "response": [],
               "event": [
                 {
                   "listen": "test",
@@ -458,11 +535,10 @@
                     ]
                   }
                 }
-              ],
-              "response": []
+              ]
             },
             {
-              "name": "404 \u2014 NOT_FOUND (unknown pilot)",
+              "name": "404 — NOT_FOUND (unknown pilot)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -474,6 +550,7 @@
                 "url": "{{baseUrl}}/v1/pilots/{{unknownPilotId}}",
                 "description": ""
               },
+              "response": [],
               "event": [
                 {
                   "listen": "test",
@@ -485,11 +562,10 @@
                     ]
                   }
                 }
-              ],
-              "response": []
+              ]
             },
             {
-              "name": "500 \u2014 PILOT_SOURCE_UNAVAILABLE",
+              "name": "500 — PILOT_SOURCE_UNAVAILABLE",
               "request": {
                 "method": "GET",
                 "header": [
@@ -499,8 +575,9 @@
                   }
                 ],
                 "url": "{{baseUrl}}/v1/pilots/{{pilotId}}",
-                "description": "Only when ESI is down \u2014 skip in happy-path runs."
+                "description": "Only when ESI is down — skip in happy-path runs."
               },
+              "response": [],
               "event": [
                 {
                   "listen": "test",
@@ -512,8 +589,184 @@
                     ]
                   }
                 }
-              ],
-              "response": []
+              ]
+            },
+            {
+              "name": "400 — pilotId not integer (assets ParseIntPipe)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{invalidPilotId}}/assets",
+                "description": "ParseIntPipe on assets path pilotId."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "400 — locationId not integer (assets by location)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/assets/locations/{{invalidPilotId}}",
+                "description": "ParseIntPipe on locationId (reuse invalidPilotId = not-a-number)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "401 — UNAUTHORIZED (assets without cookie)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/assets",
+                "description": "ASSETS_AUTH_REQUIRED — no neocom_access cookie."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                      "pm.test('code UNAUTHORIZED', () => pm.expect(pm.response.json().errors[0].code).to.eql('UNAUTHORIZED'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "401 — UNAUTHORIZED (assets by location without cookie)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/assets/locations/{{assetLocationId}}",
+                "description": "ASSETS_AUTH_REQUIRED on by-location endpoint."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                      "pm.test('code UNAUTHORIZED', () => pm.expect(pm.response.json().errors[0].code).to.eql('UNAUTHORIZED'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "401 — TOKEN_UNAVAILABLE (assets, bad cookie)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{invalidAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/assets",
+                "description": "Cookie present but ESI token cannot be obtained for the pilot — TOKEN_UNAVAILABLE (or UNAUTHORIZED depending on cookie parse)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                      "const code = pm.response.json().errors[0].code;",
+                      "pm.test('UNAUTHORIZED or TOKEN_UNAVAILABLE', () => pm.expect(['UNAUTHORIZED','TOKEN_UNAVAILABLE']).to.include(code));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "500 — ESI_ASSETS_UNAVAILABLE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/assets",
+                "description": "Only when ESI assets is down — skip in happy-path runs."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 500', () => pm.response.to.have.status(500));",
+                      "pm.test('code INTERNAL_SERVER_ERROR', () => pm.expect(pm.response.json().errors[0].code).to.eql('INTERNAL_SERVER_ERROR'));"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
@@ -521,14 +774,14 @@
     },
     {
       "name": "Industry",
-      "description": "OpenAPI: `tools/openapi/industry-service-v0.1.0.yaml` \u2014 `V1IndustryController`. Sync BlueprintV1Dto[].",
+      "description": "OpenAPI: `tools/openapi/industry-service-v0.1.0.yaml` — `V1IndustryController`. Sync BlueprintV1Dto[].",
       "item": [
         {
           "name": "Happy path",
           "description": "",
           "item": [
             {
-              "name": "200 \u2014 BlueprintV1Dto[]",
+              "name": "200 — BlueprintV1Dto[]",
               "request": {
                 "method": "GET",
                 "header": [
@@ -573,7 +826,7 @@
           "description": "",
           "item": [
             {
-              "name": "400 \u2014 INVALID_REQUEST (pilotId not integer)",
+              "name": "400 — INVALID_REQUEST (pilotId not integer)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -600,7 +853,7 @@
               "response": []
             },
             {
-              "name": "401 \u2014 TOKEN_UNAVAILABLE (invalid access cookie)",
+              "name": "401 — TOKEN_UNAVAILABLE (invalid access cookie)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -631,7 +884,7 @@
               "response": []
             },
             {
-              "name": "404 \u2014 NOT_FOUND",
+              "name": "404 — NOT_FOUND",
               "request": {
                 "method": "GET",
                 "header": [
@@ -662,7 +915,7 @@
               "response": []
             },
             {
-              "name": "500 \u2014 ESI_INDUSTRY_UNAVAILABLE",
+              "name": "500 — ESI_INDUSTRY_UNAVAILABLE",
               "request": {
                 "method": "GET",
                 "header": [
@@ -698,14 +951,14 @@
     },
     {
       "name": "Manufacture",
-      "description": "OpenAPI: `tools/openapi/manufacture-service-v0.1.0.yaml` \u2014 `V1BlueprintListController`.",
+      "description": "OpenAPI: `tools/openapi/manufacture-service-v0.1.0.yaml` — `V1BlueprintListController`.",
       "item": [
         {
           "name": "Happy path",
           "description": "",
           "item": [
             {
-              "name": "200 \u2014 ProcessedBlueprint[] list",
+              "name": "200 — ProcessedBlueprint[] list",
               "request": {
                 "method": "GET",
                 "header": [
@@ -744,7 +997,7 @@
               "response": []
             },
             {
-              "name": "200 \u2014 SSE blueprints/events",
+              "name": "200 — SSE blueprints/events",
               "request": {
                 "method": "GET",
                 "header": [
@@ -758,7 +1011,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/v1/pilots/{{pilotId}}/manufacture/blueprints/events",
-                "description": "SSE stream \u2014 may hang until first event; use Send and Download or short timeout."
+                "description": "SSE stream — may hang until first event; use Send and Download or short timeout."
               },
               "event": [
                 {
@@ -780,7 +1033,7 @@
           "description": "",
           "item": [
             {
-              "name": "400 \u2014 pilotId not integer (ParseIntPipe)",
+              "name": "400 — pilotId not integer (ParseIntPipe)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -806,7 +1059,7 @@
               "response": []
             },
             {
-              "name": "401 \u2014 TOKEN_UNAVAILABLE (invalid access cookie on ESI miss)",
+              "name": "401 — TOKEN_UNAVAILABLE (invalid access cookie on ESI miss)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -842,14 +1095,14 @@
     },
     {
       "name": "Universe",
-      "description": "OpenAPI: `tools/openapi/universe-service-v0.1.0.yaml` \u2014 `V1UniverseController` (spacelocations, eveitems, pricedeveitems).",
+      "description": "OpenAPI: `tools/openapi/universe-service-v0.1.0.yaml` — `V1UniverseController` (spacelocations, eveitems, pricedeveitems).",
       "item": [
         {
           "name": "Happy path",
           "description": "",
           "item": [
             {
-              "name": "200 \u2014 SpaceLocation STATION",
+              "name": "200 — SpaceLocation STATION",
               "request": {
                 "method": "GET",
                 "header": [
@@ -882,7 +1135,7 @@
               "response": []
             },
             {
-              "name": "200 \u2014 SpaceLocation REGION",
+              "name": "200 — SpaceLocation REGION",
               "request": {
                 "method": "GET",
                 "header": [
@@ -909,7 +1162,7 @@
               "response": []
             },
             {
-              "name": "200 \u2014 EveItemV1Dto (Tritanium)",
+              "name": "200 — EveItemV1Dto (Tritanium)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -919,7 +1172,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/api/v1/universe/eveitems/{{eveItemId}}",
-                "description": "Public GetEveItemById \u2014 no cookie (ITEM-017)."
+                "description": "Public GetEveItemById — no cookie (ITEM-017)."
               },
               "event": [
                 {
@@ -942,7 +1195,7 @@
               "response": []
             },
             {
-              "name": "200 \u2014 PricedItemV1Dto (requires seeded hub price)",
+              "name": "200 — PricedItemV1Dto (requires seeded hub price)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -987,7 +1240,7 @@
           "description": "",
           "item": [
             {
-              "name": "400 \u2014 locationId not integer (ParseIntPipe)",
+              "name": "400 — locationId not integer (ParseIntPipe)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1013,7 +1266,7 @@
               "response": []
             },
             {
-              "name": "401 \u2014 UNAUTHORIZED (structure without cookie)",
+              "name": "401 — UNAUTHORIZED (structure without cookie)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1023,7 +1276,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/api/v1/universe/spacelocations/{{locationStructureId}}",
-                "description": "LOC-135 \u2014 structure id range without neocom_access."
+                "description": "LOC-135 — structure id range without neocom_access."
               },
               "event": [
                 {
@@ -1040,7 +1293,7 @@
               "response": []
             },
             {
-              "name": "404 \u2014 LOCATION_NOT_FOUND",
+              "name": "404 — LOCATION_NOT_FOUND",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1067,7 +1320,7 @@
               "response": []
             },
             {
-              "name": "400 \u2014 itemId not integer (eveitems ParseIntPipe)",
+              "name": "400 — itemId not integer (eveitems ParseIntPipe)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1093,7 +1346,7 @@
               "response": []
             },
             {
-              "name": "400 \u2014 itemId not integer (pricedeveitems ParseIntPipe)",
+              "name": "400 — itemId not integer (pricedeveitems ParseIntPipe)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1123,7 +1376,7 @@
               "response": []
             },
             {
-              "name": "401 \u2014 UNAUTHORIZED (pricedeveitems without cookie)",
+              "name": "401 — UNAUTHORIZED (pricedeveitems without cookie)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1133,7 +1386,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/api/v1/universe/pricedeveitems/{{eveItemId}}",
-                "description": "ITEM-021 / PRICED_ITEM_AUTH_REQUIRED \u2014 wire code UNAUTHORIZED."
+                "description": "ITEM-021 / PRICED_ITEM_AUTH_REQUIRED — wire code UNAUTHORIZED."
               },
               "event": [
                 {
@@ -1150,7 +1403,7 @@
               "response": []
             },
             {
-              "name": "404 \u2014 EVE_ITEM_NOT_FOUND (eveitems)",
+              "name": "404 — EVE_ITEM_NOT_FOUND (eveitems)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1177,7 +1430,7 @@
               "response": []
             },
             {
-              "name": "404 \u2014 EVE_ITEM_NOT_FOUND (pricedeveitems)",
+              "name": "404 — EVE_ITEM_NOT_FOUND (pricedeveitems)",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1208,7 +1461,7 @@
               "response": []
             },
             {
-              "name": "404 \u2014 MARKET_PRICE_NOT_FOUND (pricedeveitems)",
+              "name": "404 — MARKET_PRICE_NOT_FOUND (pricedeveitems)",
               "request": {
                 "method": "GET",
                 "header": [

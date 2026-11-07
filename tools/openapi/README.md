@@ -6,6 +6,7 @@ Rules from OpenSpec `back-openapi` (BACK-SVC-060…063):
 2. **Schema names** — name schemas after their **domain / interchange** model names (e.g. `BlueprintV1Dto`, `PilotV2`, `SpaceLocation`).
 3. **Versioned paths** — every endpoint path includes a version prefix (e.g. `v1`).
 4. **Domain model wins** — if OpenAPI and the domain/DTO disagree on fields or names, correct OpenAPI to match the code.
+5. **Spec file SemVer** — after a release that shipped an adapter OpenAPI file, any further edit to that file before the next release **bumps the minor** (`info.version` and the filename `…-vX.Y.Z.yaml`). Do not leave a released filename/version for post-release edits.
 
 Each **inbound adapter** under `src/infrastructure/adapters/inbound/` has a matching OpenAPI file that documents:
 
@@ -21,7 +22,7 @@ Runtime TypeScript types come from **`neocom-domain`** and back DTOs under `infr
 | File | Inbound adapter | Controllers |
 | --- | --- | --- |
 | `auth-service-v0.1.0.yaml` | auth | `auth/v1-auth.controller.ts` |
-| `pilot-service-v0.1.0.yaml` | pilot | `pilot/v1-pilot.controller.ts` |
+| `pilot-service-v0.2.0.yaml` | pilot | `pilot/v1-pilot.controller.ts` (get pilot + assets list / by-location) |
 | `industry-service-v0.1.0.yaml` | industry | `industry/v1-industry.controller.ts` |
 | `manufacture-service-v0.1.0.yaml` | manufacture | `industry/v1-blueprint-list.controller.ts` |
 | `universe-service-v0.1.0.yaml` | universe | `universe/v1-universe.controller.ts` |
