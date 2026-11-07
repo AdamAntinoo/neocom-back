@@ -3,11 +3,14 @@ import { Record } from './record.js';
 
 /**
  * Back ↔ front interchange for a catalog space location (BLP-015 / BLP-020).
- * Owned by neocom-back under `infrastructure/adapters/dto` (BLP-026). Extends {@link Record} (BLP-028).
+ * Owned by neocom-back under `infrastructure/adapters/inbound/dto` (BLP-026). Extends {@link Record} (BLP-028).
+ * Generic {@link TLocationType} lets {@link EveLocationV1Dto} widen location kinds without breaking assignability.
  */
-export class SpaceLocationV1Dto extends Record {
+export class SpaceLocationV1Dto<
+  TLocationType extends string = LocationIdentifierType,
+> extends Record {
   override jsonClass: string = 'SpaceLocationV1Dto';
-  locationType: LocationIdentifierType = 'REGION';
+  locationType: TLocationType = 'REGION' as TLocationType;
   locationId = 0;
 
   regionId?: number;
@@ -27,7 +30,7 @@ export class SpaceLocationV1Dto extends Record {
   corporationId?: number;
   corporationName?: string;
 
-  constructor(values: Partial<SpaceLocationV1Dto> = {}) {
+  constructor(values: Partial<SpaceLocationV1Dto<TLocationType>> = {}) {
     super(values);
     Object.assign(this, values);
     this.jsonClass = 'SpaceLocationV1Dto';

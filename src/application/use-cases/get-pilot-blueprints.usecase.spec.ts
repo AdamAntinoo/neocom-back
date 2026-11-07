@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { HttpStatus } from '@nestjs/common';
 import type { BlueprintDtoLoader } from '@App/ports/blueprint-dto-loader.port.js';
 import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
-import { BlueprintV1Dto } from '@Infra/adapters/dto/blueprint-v1.dto.js';
+import { BlueprintV1Dto } from '@Infra/adapters/inbound/dto/blueprint-v1.dto.js';
 import { NeocomBackendError } from 'neocom-domain';
 import { GetPilotBlueprintsUseCase } from './get-pilot-blueprints.usecase.js';
 import type { GetSpaceLocationUseCase } from './get-space-location.usecase.js';
@@ -70,7 +69,7 @@ describe('GetPilotBlueprintsUseCase', () => {
     };
     const getSpaceLocation = {
       execute: vi.fn().mockRejectedValue(
-        new NeocomBackendError(HttpStatus.NOT_FOUND, [
+        new NeocomBackendError(404, [
           {
             code: 'LOCATION_NOT_FOUND',
             description: 'missing',
@@ -102,7 +101,7 @@ describe('GetPilotBlueprintsUseCase', () => {
     };
     const getSpaceLocation = {
       execute: vi.fn().mockRejectedValue(
-        new NeocomBackendError(HttpStatus.FORBIDDEN, [
+        new NeocomBackendError(403, [
           {
             code: 'FORBIDDEN',
             description: 'ESI forbids access to location id 1000000000035.',

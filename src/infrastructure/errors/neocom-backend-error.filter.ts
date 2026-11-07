@@ -5,6 +5,7 @@ import { NeocomBackendError } from 'neocom-domain';
 
 /**
  * Maps catalogue {@link NeocomBackendError} and raw {@link EsiError} to HTTP JSON.
+ * Catalogue status comes from {@link NeocomBackendError.httpStatus}.
  * ESI status comes from `EsiError.statusCode`; when that is missing or `0` (network /
  * client-side faults), the response is **500**.
  */
@@ -14,7 +15,14 @@ export class NeocomBackendErrorFilter implements ExceptionFilter {
     const response = host.switchToHttp().getResponse<Response>();
 
     if (exception instanceof NeocomBackendError) {
-      response.status(exception.httpStatus).json({
+      // Status is owned by the catalog entry (via doThrow) — not a secondary code→status map.
+      const status =
+        Number.isFinite(exception.httpStatus) &&
+        exception.httpStatus >= 400 &&
+        exception.httpStatus < 600
+          ? exception.httpStatus
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      response.status(status).json({
         errors: exception.errors,
         ...(exception.traceId === undefined ? {} : { traceId: exception.traceId }),
       });

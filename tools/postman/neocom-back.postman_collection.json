@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "b7e2c1a0-neocom-back-adapters-001",
+    "_postman_id": "98109c51-65b1-416b-aeb9-5f914a90cc35",
     "name": "NEOCOM Back",
-    "description": "Single collection for every inbound HTTP adapter under `src/infrastructure/adapters/inbound/`.\n\nEach adapter folder has **Happy path** then **Exceptions** (documented OpenAPI / ExceptionCatalog outcomes).\n\n**OpenAPI** (`tools/openapi/`):\n- `auth-service-v0.1.0.yaml`\n- `pilot-service-v0.1.0.yaml`\n- `industry-service-v0.1.0.yaml`\n- `manufacture-service-v0.1.0.yaml`\n- `universe-service-v0.1.0.yaml`\n\n**Auth outside Postman:** log in via neocom-front, then run **Auth \u2192 Happy path \u2192 Load session from back**.\n\nEnvironment: **NEOCOM local**.",
+    "description": "Inbound adapters for neocom-back. Universe includes spacelocations, eveitems (public), and pricedeveitems (authenticated). Import with tools/postman/neocom-local.postman_environment.json. Collection revision id: 98109c51-65b1-416b-aeb9-5f914a90cc35.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -130,7 +130,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "Load session (first stored character)",
@@ -174,7 +175,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "POST callback (SSO exchange)",
@@ -212,7 +214,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         },
@@ -258,7 +261,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "400 \u2014 SSO_STATE_MISMATCH (missing code)",
@@ -292,7 +296,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "400 \u2014 INVALID_REQUEST (characterId not integer)",
@@ -318,7 +323,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "401 \u2014 TOKEN_UNAVAILABLE (unknown characterId in store)",
@@ -349,7 +355,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         }
@@ -387,7 +394,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "200 \u2014 PilotV2 (logged in)",
@@ -417,7 +425,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         },
@@ -449,7 +458,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "404 \u2014 NOT_FOUND (unknown pilot)",
@@ -475,7 +485,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "500 \u2014 PILOT_SOURCE_UNAVAILABLE",
@@ -501,7 +512,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         }
@@ -551,7 +563,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         },
@@ -583,7 +596,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "401 \u2014 TOKEN_UNAVAILABLE (invalid access cookie)",
@@ -613,7 +627,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "404 \u2014 NOT_FOUND",
@@ -643,7 +658,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "500 \u2014 ESI_INDUSTRY_UNAVAILABLE",
@@ -673,7 +689,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         }
@@ -723,7 +740,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "200 \u2014 SSE blueprints/events",
@@ -752,7 +770,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         },
@@ -783,7 +802,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "401 \u2014 TOKEN_UNAVAILABLE (invalid access cookie on ESI miss)",
@@ -813,7 +833,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             }
           ]
         }
@@ -821,7 +842,7 @@
     },
     {
       "name": "Universe",
-      "description": "OpenAPI: `tools/openapi/universe-service-v0.1.0.yaml` \u2014 `V1SpaceLocationController`.",
+      "description": "OpenAPI: `tools/openapi/universe-service-v0.1.0.yaml` \u2014 `V1UniverseController` (spacelocations, eveitems, pricedeveitems).",
       "item": [
         {
           "name": "Happy path",
@@ -857,7 +878,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "200 \u2014 SpaceLocation REGION",
@@ -883,7 +905,80 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
+            },
+            {
+              "name": "200 \u2014 EveItemV1Dto (Tritanium)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/eveitems/{{eveItemId}}",
+                "description": "Public GetEveItemById \u2014 no cookie (ITEM-017)."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('EveItemV1Dto', () => {",
+                      "  pm.expect(body.jsonClass).to.eql('EveItemV1Dto');",
+                      "  pm.expect(body.typeId).to.eql(Number(pm.variables.get('eveItemId')));",
+                      "  pm.expect(body).to.have.property('name');",
+                      "  pm.expect(body).to.have.property('groupId');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "200 \u2014 PricedItemV1Dto (requires seeded hub price)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/pricedeveitems/{{eveItemId}}",
+                "description": "Authenticated GetPricedItemById (ITEM-020). Hub prices come from JitaMarketHubPriceAdapter seed map until MKT-007; without a seed this returns 404 MARKET_PRICE_NOT_FOUND (see Exceptions)."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('PricedItemV1Dto', () => {",
+                      "  pm.expect(body.jsonClass).to.eql('PricedItemV1Dto');",
+                      "  pm.expect(body.typeId).to.eql(Number(pm.variables.get('eveItemId')));",
+                      "  pm.expect(body).to.have.property('buyPrice');",
+                      "  pm.expect(body).to.have.property('sellPrice');",
+                      "  pm.expect(body.marketHub).to.be.an('object');",
+                      "  pm.expect(body.marketHub.jsonClass).to.eql('EveLocationV1Dto');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "response": []
             }
           ]
         },
@@ -914,7 +1009,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "401 \u2014 UNAUTHORIZED (structure without cookie)",
@@ -940,7 +1036,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
             },
             {
               "name": "404 \u2014 LOCATION_NOT_FOUND",
@@ -966,7 +1063,180 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "response": []
+            },
+            {
+              "name": "400 \u2014 itemId not integer (eveitems ParseIntPipe)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/eveitems/{{eveItemInvalidId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "400 \u2014 itemId not integer (pricedeveitems ParseIntPipe)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/pricedeveitems/{{eveItemInvalidId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "401 \u2014 UNAUTHORIZED (pricedeveitems without cookie)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/pricedeveitems/{{eveItemId}}",
+                "description": "ITEM-021 / PRICED_ITEM_AUTH_REQUIRED \u2014 wire code UNAUTHORIZED."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                      "pm.test('code UNAUTHORIZED', () => pm.expect(pm.response.json().errors[0].code).to.eql('UNAUTHORIZED'));"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "404 \u2014 EVE_ITEM_NOT_FOUND (eveitems)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/eveitems/{{eveItemUnknownId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                      "pm.test('code EVE_ITEM_NOT_FOUND', () => pm.expect(pm.response.json().errors[0].code).to.eql('EVE_ITEM_NOT_FOUND'));"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "404 \u2014 EVE_ITEM_NOT_FOUND (pricedeveitems)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/pricedeveitems/{{eveItemUnknownId}}",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                      "pm.test('code EVE_ITEM_NOT_FOUND', () => pm.expect(pm.response.json().errors[0].code).to.eql('EVE_ITEM_NOT_FOUND'));"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "404 \u2014 MARKET_PRICE_NOT_FOUND (pricedeveitems)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "neocom_access={{neocomAccessCookie}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/universe/pricedeveitems/{{eveItemId}}",
+                "description": "Known type resolves via GetEveItemById but hub price table has no entry (current default until MKT-007 / seed)."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                      "pm.test('code MARKET_PRICE_NOT_FOUND', () => pm.expect(pm.response.json().errors[0].code).to.eql('MARKET_PRICE_NOT_FOUND'));"
+                    ]
+                  }
+                }
+              ],
+              "response": []
             }
           ]
         }

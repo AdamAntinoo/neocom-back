@@ -1,6 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EsiClient, EsiTokenManager } from '@lgriffin/esi.ts';
 import type { NodeEnricher } from '@Domain/ports/node-enricher.port.js';
+import {
+  type BlueprintListItem,
+  type BlueprintListPort,
+} from '@Domain/ports/blueprint-list.port.js';
 import { ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
 import { ExceptionCatalog } from '@Infra/adapters/exceptions/index.js';
 import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
@@ -8,23 +12,17 @@ import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-qu
 import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
 import { readPilotBlueprintDtosFromEsi } from '@Outbound/industry/esi-industry.adapter.js';
 
-export type BlueprintListItem = {
-  jsonClass: 'ProcessedBlueprint';
-  blueprintId: number;
-  name: string;
-  ready: boolean;
-  manufactureIndex: number | null;
-  marketCost: number | null;
-  manufactureCost: number | null;
-};
-
 const STALE_MS = 60 * 60 * 1000;
 const ESI_USER_AGENT =
   'neocom-back/0.1.0 (AdamAntinoo; https://github.com/AdamAntinoo/neocom-back)';
 
+/**
+ * Industry outbound adapter: manufacture blueprint list + node enrichment (BASSE-002…005, 011).
+ * Implements {@link BlueprintListPort} and {@link NodeEnricher}.
+ */
 @Injectable()
-export class BlueprintListService implements NodeEnricher {
-  private readonly logger = new Logger(BlueprintListService.name);
+export class BlueprintListAdapter implements BlueprintListPort, NodeEnricher {
+  private readonly logger = new Logger(BlueprintListAdapter.name);
 
   constructor(
     private readonly store: ProcessedNodeStore,

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { HttpStatus } from '@nestjs/common';
 import { EsiConfigurationError } from '@lgriffin/esi.ts';
 import { NeocomBackendError } from 'neocom-domain';
 import { attachPilotAccessToken, readPilotBlueprintDtosFromEsi } from './esi-industry.adapter.js';
@@ -51,7 +50,7 @@ describe('readPilotBlueprintDtosFromEsi', () => {
       expect.unreachable('should throw');
     } catch (error) {
       expect(error).toBeInstanceOf(NeocomBackendError);
-      expect((error as NeocomBackendError).httpStatus).toBe(HttpStatus.UNAUTHORIZED);
+      expect((error as NeocomBackendError).errors[0]?.code).toBe('TOKEN_UNAVAILABLE');
     }
   });
 });

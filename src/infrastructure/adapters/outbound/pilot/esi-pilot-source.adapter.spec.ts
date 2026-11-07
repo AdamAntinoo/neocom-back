@@ -1,4 +1,3 @@
-import { HttpStatus } from '@nestjs/common';
 import { EsiError } from '@lgriffin/esi.ts';
 import type { AllianceInfo, Ancestry, Bloodline, CharacterInfo, CorporationInfo, Race } from '@lgriffin/esi.ts';
 import { NeocomBackendError } from 'neocom-domain';
@@ -98,11 +97,10 @@ describe('readPilotFromEsi', () => {
 
   it('returns not found when ESI has no character', async () => {
     await expect(readPilotFromEsi(esi(() => Promise.reject(new EsiError(404, 'missing'))), 93813310)).rejects.toMatchObject({
-      httpStatus: HttpStatus.NOT_FOUND,
       errors: [
         {
-          code: 'NOT_FOUND',
-          description: 'No pilot exists for this identifier.',
+          code: 'PILOT_NOT_FOUND',
+          description: 'No pilot exists for identifier 93813310.',
           field: 'pilotId',
           container: 'path',
           value: '93813310',
@@ -113,7 +111,6 @@ describe('readPilotFromEsi', () => {
 
   it('returns the pilot source unavailable when ESI is down', async () => {
     await expect(readPilotFromEsi(esi(() => Promise.reject(new EsiError(503, 'unavailable'))), 93813310)).rejects.toMatchObject({
-      httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
       errors: [
         {
           code: 'INTERNAL_SERVER_ERROR',

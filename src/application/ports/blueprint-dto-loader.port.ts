@@ -1,4 +1,4 @@
-import type { BlueprintV1Dto } from '@Infra/adapters/dto/blueprint-v1.dto.js';
+import type { BlueprintV1Dto } from '@Infra/adapters/inbound/dto/blueprint-v1.dto.js';
 
 export const BLUEPRINT_DTO_LOADER = Symbol('BLUEPRINT_DTO_LOADER');
 

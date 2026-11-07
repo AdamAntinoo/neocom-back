@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import {
@@ -6,13 +6,15 @@ import {
   type BlueprintDtoLoader,
 } from '@App/ports/blueprint-dto-loader.port.js';
 import { GetSpaceLocationUseCase } from '@App/use-cases/get-space-location.usecase.js';
-import type { BlueprintV1Dto } from '@Infra/adapters/dto/blueprint-v1.dto.js';
-import { BlueprintListDtoConverter } from '@Infra/adapters/dto/blueprint-list-dto.converter.js';
+import type { BlueprintV1Dto } from '@Infra/adapters/inbound/dto/blueprint-v1.dto.js';
+import { EveItemDtoConverter } from '@Infra/adapters/inbound/converters/eve-item-dto.converter.js';
 import {
   NEOCOM_ACCESS,
   parseAccessCookie,
 } from '@Infra/adapters/services/auth-cookies.service.js';
 import { NeocomBackendError } from 'neocom-domain';
+
+const LOCATION_EMBED_SKIP_CODES = new Set(['LOCATION_NOT_FOUND', 'FORBIDDEN']);
 
 @Injectable()
 export class GetPilotBlueprintsUseCase {
@@ -35,12 +37,11 @@ export class GetPilotBlueprintsUseCase {
     const auth = this.req ? parseAccessCookie(this.req.cookies?.[NEOCOM_ACCESS]) : null;
     try {
       const location = await this.getSpaceLocation.execute(dto.locationId, auth);
-      dto.location = BlueprintListDtoConverter.toSpaceLocationV1Dto(location);
+      dto.location = EveItemDtoConverter.toSpaceLocationV1Dto(location);
     } catch (error) {
       if (
         error instanceof NeocomBackendError &&
-        (error.httpStatus === HttpStatus.NOT_FOUND ||
-          error.httpStatus === HttpStatus.FORBIDDEN)
+        error.errors.some((entry) => LOCATION_EMBED_SKIP_CODES.has(entry.code))
       ) {
         return dto;
       }

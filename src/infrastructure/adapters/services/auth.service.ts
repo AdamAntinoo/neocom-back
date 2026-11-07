@@ -80,12 +80,8 @@ export class AuthService {
   ): Promise<StoredSessionPayload> {
     const characters = await this.tokens.listCharacters();
     if (!characters.length) {
-      throw ExceptionCatalog.NOT_FOUND.doThrow(
-        exceptionPayload()
-          .field('tokens')
-          .container('storage')
-          .value('No characters in tokens.json — log in via the front first.')
-          .build(),
+      throw ExceptionCatalog.STORED_CHARACTERS_NOT_FOUND.doThrow(
+        exceptionPayload().field('tokens').container('storage').build(),
       );
     }
 
@@ -94,7 +90,8 @@ export class AuthService {
         ? characters.find((c) => c.characterId === characterId)
         : characters[0];
     if (selected == null) {
-      throw ExceptionCatalog.NOT_FOUND.doThrow(
+      throw ExceptionCatalog.STORED_CHARACTER_NOT_FOUND.doThrow(
+        String(characterId),
         exceptionPayload()
           .field('characterId')
           .container('query')

@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { GetPilotBlueprintsUseCase } from '@App/use-cases/get-pilot-blueprints.usecase.js';
-import type { BlueprintV1Dto } from '@Infra/adapters/dto/blueprint-v1.dto.js';
+import type { BlueprintV1Dto } from '@Infra/adapters/inbound/dto/blueprint-v1.dto.js';
 import {
   ExceptionCatalog,
   exceptionPayload,
