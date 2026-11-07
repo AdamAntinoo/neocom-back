@@ -104,4 +104,22 @@ export const ExceptionCatalog = {
     'ESI forbids access to location id {0}.',
     HttpStatus.FORBIDDEN,
   ),
+
+  ASSETS_AUTH_REQUIRED: catalogEntry(
+    'UNAUTHORIZED',
+    'Access cookie / session is required to get assets for pilot id {0}.',
+    HttpStatus.UNAUTHORIZED,
+  ),
+
+  ASSETS_NOT_FOUND: catalogEntry(
+    'ASSETS_NOT_FOUND',
+    'No assets for pilot id {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  ESI_ASSETS_UNAVAILABLE: catalogEntry(
+    'INTERNAL_SERVER_ERROR',
+    'ESI assets source is not available.',
+    HttpStatus.INTERNAL_SERVER_ERROR,
+  ),
 } as const;

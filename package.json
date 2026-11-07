@@ -38,7 +38,7 @@
     "db:migrate": "bash tools/db/flyway.sh migrate",
     "db:validate": "bash tools/db/flyway.sh validate",
     "db:sync": "bash tools/db/git-sync.sh",
-    "openapi:pilot": "openapi-generator generate -i tools/openapi/pilot-service-v0.1.0.yaml -g typescript-nestjs -o src/generated/pilot --additional-properties=fileNaming=kebab-case,withInterfaces=true,supportsES6=true,modelPropertyNaming=original,npmName=neocom-back-pilot-api,npmVersion=0.0.1 && node scripts/fix-generated-pilot-imports.mjs"
+    "openapi:pilot": "openapi-generator generate -i tools/openapi/pilot-service-v0.2.0.yaml -g typescript-nestjs -o src/generated/pilot --additional-properties=fileNaming=kebab-case,withInterfaces=true,supportsES6=true,modelPropertyNaming=original,npmName=neocom-back-pilot-api,npmVersion=0.0.1 && node scripts/fix-generated-pilot-imports.mjs"
   },
   "dependencies": {
     "@lgriffin/esi.ts": "^12.0.0",

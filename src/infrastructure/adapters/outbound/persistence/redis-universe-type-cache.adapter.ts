@@ -1,10 +1,12 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import type { UniverseTypeCache } from '@Domain/ports/universe-type-cache.port.js';
 import { EveItemV1Dto } from '@Infra/adapters/inbound/dto/eve-item-v1.dto.js';
+import { LayerLogger } from '@Infra/config/layer-logging.js';
 
 const KEY_PREFIX = 'neocom:universe-type:';
+const log = LayerLogger.for('outbound', 'RedisUniverseTypeCache');
 
 /**
  * Permanent Redis universe-type cache (ITEM-018). Stores {@link EveItemV1Dto}.
@@ -12,25 +14,24 @@ const KEY_PREFIX = 'neocom:universe-type:';
  */
 @Injectable()
 export class RedisUniverseTypeCache implements UniverseTypeCache, OnModuleDestroy {
-  private readonly logger = new Logger(RedisUniverseTypeCache.name);
   private client: Redis | null = null;
   private active = false;
 
   constructor(config: ConfigService) {
     const redisUrl = config.get<string>('REDIS_URL');
     if (!redisUrl) {
-      this.logger.log('REDIS_URL unset — universe-type cache inactive (ESI-only resolve)');
+      log.log('REDIS_URL unset — universe-type cache inactive (ESI-only resolve)');
       return;
     }
     try {
       this.client = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
       void this.connect().catch((err: unknown) => {
-        this.logger.warn(`Universe-type Redis connect failed: ${String(err)}`);
+        log.warn(`Universe-type Redis connect failed: ${String(err)}`);
         this.active = false;
         this.client = null;
       });
     } catch (err) {
-      this.logger.warn(`Universe-type Redis unavailable: ${String(err)}`);
+      log.warn(`Universe-type Redis unavailable: ${String(err)}`);
       this.client = null;
     }
   }
@@ -41,7 +42,7 @@ export class RedisUniverseTypeCache implements UniverseTypeCache, OnModuleDestro
     }
     await this.client.connect();
     this.active = true;
-    this.logger.log('Universe-type Redis cache connected');
+    log.log('Universe-type Redis cache connected');
   }
 
   isActive(): boolean {
@@ -57,9 +58,16 @@ export class RedisUniverseTypeCache implements UniverseTypeCache, OnModuleDestro
       if (!raw) {
         return undefined;
       }
-      return new EveItemV1Dto(JSON.parse(raw) as Partial<EveItemV1Dto>);
+      const dto = new EveItemV1Dto(JSON.parse(raw) as Partial<EveItemV1Dto>);
+      log.dtoConverted({
+        from: 'Redis JSON',
+        to: 'EveItemV1Dto',
+        ids: [dto.typeId],
+        fields: { source: 'cache', name: dto.name },
+      });
+      return dto;
     } catch (err) {
-      this.logger.warn(`Universe-type Redis get failed: ${String(err)}`);
+      log.warn(`Universe-type Redis get failed: ${String(err)}`);
       return undefined;
     }
   }
@@ -71,8 +79,9 @@ export class RedisUniverseTypeCache implements UniverseTypeCache, OnModuleDestro
     try {
       // Permanent — no EX/TTL (ITEM-018).
       await this.client.set(`${KEY_PREFIX}${typeId}`, JSON.stringify(item));
+      log.debug('dto.cached', { typeId, permanent: true });
     } catch (err) {
-      this.logger.warn(`Universe-type Redis set failed: ${String(err)}`);
+      log.warn(`Universe-type Redis set failed: ${String(err)}`);
     }
   }
 

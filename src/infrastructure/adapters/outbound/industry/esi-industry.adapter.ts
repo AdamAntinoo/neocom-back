@@ -21,8 +21,10 @@ import {
   type EsiCharacterBlueprint,
 } from '@Infra/adapters/inbound/converters/eve-item-dto.converter.js';
 import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
+import { LayerLogger } from '@Infra/config/layer-logging.js';
 
 const ESI_USER_AGENT = 'neocom-back/0.1.0 (AdamAntinoo; https://github.com/AdamAntinoo/neocom-back)';
+const log = LayerLogger.for('outbound', 'EsiIndustryAdapter');
 
 /** ESI surface used by the industry outbound adapter (initial: character blueprints). */
 export interface EsiIndustryApi {
@@ -94,7 +96,15 @@ export async function readPilotBlueprintDtosFromEsi(
 ): Promise<BlueprintV1Dto[]> {
   try {
     const rows = await esi.characters.getCharacterBlueprints(pilotId);
-    return rows.map((row) => EveItemDtoConverter.toBlueprintV1Dto(row));
+    const dtos = rows.map((row) => EveItemDtoConverter.toBlueprintV1Dto(row));
+    log.dtoConverted({
+      from: 'EsiCharacterBlueprint[]',
+      to: 'BlueprintV1Dto[]',
+      count: dtos.length,
+      ids: dtos.map((d) => d.blueprintId),
+      fields: { pilotId },
+    });
+    return dtos;
   } catch (error) {
     if (isNotFound(error)) {
       throw ExceptionCatalog.BLUEPRINTS_NOT_FOUND.doThrow(

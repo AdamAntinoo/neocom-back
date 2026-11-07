@@ -8,3 +8,8 @@ export {
 
 export { EveItemV1Dto } from './eve-item-v1.dto.js';
 export { PricedItemV1Dto } from './priced-item-v1.dto.js';
+export { EveAssetV1Dto } from './eve-asset-v1.dto.js';
+export {
+  LocatedAssetContainerV1Dto,
+  type PilotAssetNode,
+} from './located-asset-container-v1.dto.js';

@@ -14,7 +14,7 @@ Each adapter folder mirrors `src/infrastructure/adapters/inbound/`:
 | Folder | OpenAPI |
 | --- | --- |
 | Auth | `tools/openapi/auth-service-v0.1.0.yaml` |
-| Pilot | `tools/openapi/pilot-service-v0.1.0.yaml` |
+| Pilot | `tools/openapi/pilot-service-v0.2.0.yaml` (get pilot + authenticated `/assets` and `/assets/locations/{locationId}`) |
 | Industry | `tools/openapi/industry-service-v0.1.0.yaml` |
 | Manufacture | `tools/openapi/manufacture-service-v0.1.0.yaml` |
 | Universe | `tools/openapi/universe-service-v0.1.0.yaml` (`spacelocations`, `eveitems`, `pricedeveitems`) |
