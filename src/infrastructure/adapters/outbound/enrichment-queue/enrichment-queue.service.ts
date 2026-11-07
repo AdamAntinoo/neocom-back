@@ -9,7 +9,7 @@ type EnrichJob = { scopeKey: string; nodeId: string };
 
 /**
  * BullMQ + Redis when REDIS_URL is set; otherwise in-process async (local/dev) (BASSE-009).
- * Resolves NodeEnricher via ModuleRef after init to avoid a Nest DI cycle with BlueprintListService.
+ * Resolves NodeEnricher via ModuleRef after init to avoid a Nest DI cycle with BlueprintListAdapter.
  */
 @Injectable()
 export class EnrichmentQueueService implements OnModuleInit, OnModuleDestroy {

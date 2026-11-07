@@ -72,8 +72,8 @@ export async function readPilotFromEsi(esi: EsiPilotApi, pilotId: number): Promi
     return toPilot(pilotId, info, portrait, corporation, races, ancestries, bloodlines);
   } catch (error) {
     if (isNotFound(error)) {
-      throw ExceptionCatalog.NOT_FOUND.doThrow(
-        'No pilot exists for this identifier.',
+      throw ExceptionCatalog.PILOT_NOT_FOUND.doThrow(
+        String(pilotId),
         exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
       );
     }

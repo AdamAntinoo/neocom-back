@@ -1,13 +1,16 @@
-import { Controller, Get, Param, ParseIntPipe, Sse } from '@nestjs/common';
+import { Controller, Get, Inject, Param, ParseIntPipe, Sse } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { BlueprintListService } from '@Outbound/blueprint-list/blueprint-list.service.js';
+import {
+  BLUEPRINT_LIST,
+  type BlueprintListPort,
+} from '@Domain/ports/blueprint-list.port.js';
 import { SseFanoutService, type SseMessage } from '@Outbound/sse-fanout/sse-fanout.service.js';
 
 /** Manufacture async list + SSE (BASSE-006). Distinct from sync Industry GET /v1/pilots/:pilotId/blueprints. */
 @Controller('v1/pilots/:pilotId/manufacture')
 export class V1BlueprintListController {
   constructor(
-    private readonly blueprints: BlueprintListService,
+    @Inject(BLUEPRINT_LIST) private readonly blueprints: BlueprintListPort,
     private readonly fanout: SseFanoutService,
   ) {}
 

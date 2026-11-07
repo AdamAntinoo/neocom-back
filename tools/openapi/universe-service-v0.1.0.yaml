@@ -1,29 +1,34 @@
 openapi: 3.0.3
 info:
   title: NEOCOM Universe Adapter API
-  version: 0.1.0
+  version: 0.2.0
   description: |
-    ### Universe inbound adapter (`V1SpaceLocationController`)
+    ### Universe inbound adapter
 
     |||
     |------------------|------------------------------------------|
     |**System:**|back|
-    |**Adapter:**|universe / spacelocation|
-    |**Controller:**|`src/infrastructure/adapters/inbound/universe/v1-spacelocation.controller.ts`|
+    |**Adapter:**|universe|
+    |**Controller:**|`v1-universe.controller.ts` (spacelocations, eveitems, pricedeveitems)|
     ---
 
     Space location lookup by id (LOC-010). Kind is not in the path; the catalog
     decides `locationType`. Structures require the request access cookie (LOC-135).
 
-    **Error body:** `NeocomError` via ExceptionCatalog (`LOCATION_NOT_FOUND`, `UNAUTHORIZED`).
-    Invalid path id (non-integer) is Nest `ParseIntPipe` **400**.
+    Eve items (ITEM-014…021):
+    * `GET …/eveitems/{itemId}` — public `EveItemV1Dto` (Redis permanent cache + ESI miss)
+    * `GET …/pricedeveitems/{itemId}` — authenticated `PricedItemV1Dto` (composes EveItem + hub prices)
+
+    **Error body:** `NeocomError` via ExceptionCatalog. Invalid path ids (non-integer) are Nest `ParseIntPipe` **400**.
 
     ## Changelog
 
+    * `0.2.0` — `GET /api/v1/universe/eveitems/{itemId}` → `EveItemV1Dto`;
+      `GET /api/v1/universe/pricedeveitems/{itemId}` → `PricedItemV1Dto` (auth).
     * `0.1.0` — `GET /api/v1/universe/spacelocations/{locationId}` → `SpaceLocation`.
 tags:
   - name: universe
-    description: Space location lookup.
+    description: Space location and Eve item lookup.
 servers:
   - url: http://localhost:3000
     description: Local development
@@ -90,11 +95,155 @@ paths:
           $ref: "#/components/responses/LocationAuthRequiredResponse"
         "404":
           $ref: "#/components/responses/LocationNotFoundResponse"
+
+  /api/v1/universe/eveitems/{itemId}:
+    get:
+      tags: [universe]
+      operationId: getEveItemByIdV1
+      summary: Get EveItemV1Dto by type id (public)
+      description: |
+        Unauthenticated universe type facts (ITEM-016, ITEM-017).
+
+        Redis permanent cache by item id; ESI miss write-through (ITEM-018).
+
+        **Responses:**
+        * **200** — `EveItemV1Dto`
+        * **400** — path `itemId` not an integer (`ParseIntPipe`)
+        * **404** — `EVE_ITEM_NOT_FOUND`
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Universe type id (`typeId`).
+          schema:
+            type: integer
+            format: int32
+            example: 34
+      responses:
+        "200":
+          description: EveItemV1Dto for the type id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EveItemV1Dto"
+              examples:
+                Tritanium:
+                  value:
+                    jsonClass: EveItemV1Dto
+                    typeId: 34
+                    name: Tritanium
+                    description: "The main building block…"
+                    published: true
+                    groupId: 18
+                    groupName: Mineral
+                    categoryId: 4
+                    categoryName: Material
+                    iconId: 22
+                    iconUrl: "https://images.evetech.net/types/34/icon"
+                    marketGroupId: 1857
+                    mass: 0
+                    volume: 0.01
+                    packagedVolume: 0.01
+                    portionSize: 1
+                    radius: 1
+                    capacity: 0
+        "400":
+          description: Nest ParseIntPipe — itemId is not an integer.
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          $ref: "#/components/responses/EveItemNotFoundResponse"
+
+  /api/v1/universe/pricedeveitems/{itemId}:
+    get:
+      tags: [universe]
+      operationId: getPricedEveItemByIdV1
+      summary: Get PricedItemV1Dto by type id (authenticated)
+      description: |
+        Authenticated priced EveItem (ITEM-016, ITEM-020, ITEM-021).
+        Composes GetEveItemById then programme market-hub buy/sell + nested `marketHub`
+        (ITEM-019). Hub order aggregation remains EPIC-012 MKT-007 until seeded/live.
+
+        **Responses:**
+        * **200** — `PricedItemV1Dto`
+        * **400** — path `itemId` not an integer (`ParseIntPipe`)
+        * **401** — `UNAUTHORIZED` (`PRICED_ITEM_AUTH_REQUIRED`) without access cookie
+        * **404** — `EVE_ITEM_NOT_FOUND` when the type does not exist
+        * **404** — `MARKET_PRICE_NOT_FOUND` when the type exists but hub prices are missing
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Universe type id (`typeId`).
+          schema:
+            type: integer
+            format: int32
+            example: 34
+        - name: Cookie
+          in: header
+          required: true
+          description: 'neocom_access=…' pilot access cookie (required).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PricedItemV1Dto (EveItem fields + buy/sell + nested marketHub).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricedItemV1Dto"
+              examples:
+                TritaniumAtJita:
+                  value:
+                    jsonClass: PricedItemV1Dto
+                    typeId: 34
+                    name: Tritanium
+                    description: "The main building block…"
+                    published: true
+                    groupId: 18
+                    groupName: Mineral
+                    categoryId: 4
+                    categoryName: Material
+                    buyPrice: 5.5
+                    sellPrice: 6.1
+                    marketHub:
+                      jsonClass: EveLocationV1Dto
+                      locationType: STATION
+                      locationId: 60003760
+                      stationId: 60003760
+                      stationName: "Jita IV - Moon 4 - Caldari Navy Assembly Plant"
+                      solarSystemId: 30000142
+                      solarSystemName: Jita
+                      marketHub: true
+        "400":
+          description: Nest ParseIntPipe — itemId is not an integer.
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: "#/components/responses/PricedItemAuthRequiredResponse"
+        "404":
+          description: Type miss or hub price miss.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NeocomError"
+              examples:
+                EveItemNotFound:
+                  $ref: "#/components/examples/EveItemNotFound"
+                MarketPriceNotFound:
+                  $ref: "#/components/examples/MarketPriceNotFound"
 components:
   schemas:
     LocationIdentifierType:
       type: string
       enum: [REGION, CONSTELLATION, SOLAR_SYSTEM, STATION, STRUCTURE]
+    EveLocationIdentifierType:
+      type: string
+      enum: [REGION, CONSTELLATION, SOLAR_SYSTEM, STATION, STRUCTURE, PLANET, SHIP, CARGO_HOLD]
     SpaceLocation:
       type: object
       description: Domain catalog node (LOC-001 / DOM-LOC-002). No HAL links.
@@ -124,6 +273,112 @@ components:
         ownerId: { type: integer, format: int64 }
         corporationId: { type: integer, format: int64 }
         corporationName: { type: string }
+    EveLocationV1Dto:
+      type: object
+      description: Multi-kind EVE location interchange (extends SpaceLocation kinds + hub/nesting).
+      required: [jsonClass, locationType, locationId]
+      properties:
+        jsonClass:
+          type: string
+          enum: [EveLocationV1Dto]
+        locationType:
+          $ref: "#/components/schemas/EveLocationIdentifierType"
+        locationId:
+          type: integer
+          format: int64
+        regionId: { type: integer, format: int64 }
+        regionName: { type: string }
+        constellationId: { type: integer, format: int64 }
+        constellationName: { type: string }
+        solarSystemId: { type: integer, format: int64 }
+        solarSystemName: { type: string }
+        securityClass: { type: string }
+        securityStatus: { type: number }
+        stationId: { type: integer, format: int64 }
+        stationName: { type: string }
+        structureId: { type: integer, format: int64 }
+        structureName: { type: string }
+        structureTypeId: { type: integer, format: int32 }
+        ownerId: { type: integer, format: int64 }
+        corporationId: { type: integer, format: int64 }
+        corporationName: { type: string }
+        planetId: { type: integer, format: int64 }
+        planetName: { type: string }
+        shipId: { type: integer, format: int64 }
+        shipName: { type: string }
+        shipTypeId: { type: integer, format: int32 }
+        cargoHoldId:
+          oneOf:
+            - type: string
+            - type: integer
+        cargoHoldName: { type: string }
+        parentLocation:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/EveLocationV1Dto"
+        marketHub:
+          type: boolean
+          description: When true, usable as a market hub for PricedItem pricing.
+    EveItemDogmaAttribute:
+      type: object
+      required: [attributeId, value]
+      properties:
+        attributeId: { type: integer, format: int32 }
+        value: { type: number }
+    EveItemDogmaEffect:
+      type: object
+      required: [effectId, isDefault]
+      properties:
+        effectId: { type: integer, format: int32 }
+        isDefault: { type: boolean }
+    EveItemV1Dto:
+      type: object
+      description: Back interchange for one EVE universe item class (ESI type + expansions).
+      required: [jsonClass, typeId, name, description, published, groupId]
+      properties:
+        jsonClass:
+          type: string
+          enum: [EveItemV1Dto]
+        typeId: { type: integer, format: int32 }
+        name: { type: string }
+        description: { type: string }
+        published: { type: boolean }
+        groupId: { type: integer, format: int32 }
+        capacity: { type: number }
+        dogmaAttributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/EveItemDogmaAttribute"
+        dogmaEffects:
+          type: array
+          items:
+            $ref: "#/components/schemas/EveItemDogmaEffect"
+        graphicId: { type: integer, format: int32 }
+        iconId: { type: integer, format: int32 }
+        marketGroupId: { type: integer, format: int32 }
+        mass: { type: number }
+        packagedVolume: { type: number }
+        portionSize: { type: integer, format: int32 }
+        radius: { type: number }
+        volume: { type: number }
+        groupName: { type: string }
+        categoryId: { type: integer, format: int32 }
+        categoryName: { type: string }
+        iconUrl: { type: string, format: uri }
+    PricedItemV1Dto:
+      allOf:
+        - $ref: "#/components/schemas/EveItemV1Dto"
+        - type: object
+          description: EveItem plus hub-scoped buy/sell and nested marketHub.
+          required: [jsonClass, buyPrice, sellPrice, marketHub]
+          properties:
+            jsonClass:
+              type: string
+              enum: [PricedItemV1Dto]
+            buyPrice: { type: number }
+            sellPrice: { type: number }
+            marketHub:
+              $ref: "#/components/schemas/EveLocationV1Dto"
     ErrorsInner:
       type: object
       required: [code, description]
@@ -140,6 +395,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ErrorsInner"
+  examples:
+    EveItemNotFound:
+      value:
+        errors:
+          - code: "EVE_ITEM_NOT_FOUND"
+            description: "No EveItemV1Dto for item id 999999999."
+            field: "itemId"
+            container: "path"
+            value: "999999999"
+    MarketPriceNotFound:
+      value:
+        errors:
+          - code: "MARKET_PRICE_NOT_FOUND"
+            description: "No hub price data for item id 34."
+            field: "itemId"
+            container: "path"
+            value: "34"
   responses:
     LocationNotFoundResponse:
       description: `ExceptionCatalog.LOCATION_NOT_FOUND`
@@ -171,3 +443,27 @@ components:
                     field: "locationId"
                     container: "path"
                     value: "1000000000035"
+    EveItemNotFoundResponse:
+      description: `ExceptionCatalog.EVE_ITEM_NOT_FOUND`
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            NotFound:
+              $ref: "#/components/examples/EveItemNotFound"
+    PricedItemAuthRequiredResponse:
+      description: `ExceptionCatalog.PRICED_ITEM_AUTH_REQUIRED` (HTTP 401, wire code UNAUTHORIZED).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NeocomError"
+          examples:
+            Unauthorized:
+              value:
+                errors:
+                  - code: "UNAUTHORIZED"
+                    description: "Access cookie / session is required to get priced EveItem id 34."
+                    field: "cookie"
+                    container: "header"
+                    value: "34"

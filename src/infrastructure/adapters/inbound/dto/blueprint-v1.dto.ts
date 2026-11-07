@@ -3,7 +3,7 @@ import type { SpaceLocationV1Dto } from './space-location-v1.dto.js';
 
 /**
  * Back ↔ front interchange for a pilot blueprint (BLP-018 / BLP-020).
- * Owned by neocom-back under `infrastructure/adapters/dto` (BLP-026). Extends {@link Record} (BLP-028).
+ * Owned by neocom-back under `infrastructure/adapters/inbound/dto` (BLP-026). Extends {@link Record} (BLP-028).
  */
 export class BlueprintV1Dto extends Record {
   override jsonClass: string = 'BlueprintV1Dto';

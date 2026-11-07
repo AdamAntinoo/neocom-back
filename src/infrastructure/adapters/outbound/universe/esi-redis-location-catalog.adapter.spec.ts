@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MemoryLocationCache } from './memory-location-cache.adapter.js';
-import { EsiRedisLocationCatalog } from './esi-redis-location-catalog.adapter.js';
-import { EsiLocationResolver } from './esi-location-resolver.js';
+import type { LocationCache } from '@Domain/ports/location-cache.port.js';
 import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
 import { NeocomBackendError } from 'neocom-domain';
+import { EsiLocationResolver } from './esi-location-resolver.js';
+import { EsiRedisLocationCatalog } from './esi-redis-location-catalog.adapter.js';
 
 const fixtureStation: SpaceLocation = {
   jsonClass: 'SpaceLocation',
@@ -21,10 +21,24 @@ const fixtureStation: SpaceLocation = {
   regionName: LOCATION_FIXTURE.regionName,
 };
 
+/** Spec-only stub — production location cache is Redis (`RedisLocationCache`). */
+function stubLocationCache(
+  seed: SpaceLocation[] = [],
+): LocationCache & { store: Map<number, SpaceLocation> } {
+  const store = new Map<number, SpaceLocation>(seed.map((l) => [l.locationId, l]));
+  return {
+    store,
+    isActive: () => true,
+    get: async (id) => store.get(id),
+    set: async (id, location) => {
+      store.set(id, location);
+    },
+  };
+}
+
 describe('EsiRedisLocationCatalog', () => {
-  it('returns preloaded cache hits without calling ESI (LOC-137)', async () => {
-    const cache = new MemoryLocationCache();
-    cache.preload([fixtureStation]);
+  it('returns cache hits without calling ESI (LOC-137)', async () => {
+    const cache = stubLocationCache([fixtureStation]);
     const resolve = vi.fn();
     const resolver = {
       resolve,
@@ -38,7 +52,7 @@ describe('EsiRedisLocationCatalog', () => {
   });
 
   it('builds from ESI and write-through hierarchy when cache misses (LOC-140/141)', async () => {
-    const cache = new MemoryLocationCache();
+    const cache = stubLocationCache();
     const resolver = {
       resolve: vi.fn().mockResolvedValue(fixtureStation),
       hierarchyDependencies: (location: SpaceLocation) =>
@@ -82,8 +96,7 @@ describe('EsiRedisLocationCatalog', () => {
   });
 
   it('throws 401 when structure resolve lacks access cookie (LOC-135)', async () => {
-    const cache = new MemoryLocationCache();
-    const catalog = new EsiRedisLocationCatalog(cache).useResolver(
+    const catalog = new EsiRedisLocationCatalog(stubLocationCache()).useResolver(
       EsiLocationResolver.createDefault(),
     );
     await expect(catalog.searchLocation4Id(1_000_000_000_035)).rejects.toBeInstanceOf(
@@ -92,7 +105,6 @@ describe('EsiRedisLocationCatalog', () => {
     try {
       await catalog.searchLocation4Id(1_000_000_000_035);
     } catch (err) {
-      expect((err as NeocomBackendError).httpStatus).toBe(401);
       expect((err as NeocomBackendError).errors[0]?.code).toBe('UNAUTHORIZED');
     }
   });

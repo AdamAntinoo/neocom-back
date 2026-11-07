@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { HttpStatus } from '@nestjs/common';
 import { NeocomBackendError } from 'neocom-domain';
 import { formatAccessCookie, parseAccessCookie } from '@Infra/adapters/services/auth-cookies.service.js';
 import { AuthService } from './auth.service.js';
@@ -86,7 +85,7 @@ describe('AuthService', () => {
       expect.unreachable('should throw');
     } catch (error) {
       expect(error).toBeInstanceOf(NeocomBackendError);
-      expect((error as NeocomBackendError).httpStatus).toBe(HttpStatus.UNAUTHORIZED);
+      expect((error as NeocomBackendError).errors[0]?.code).toBe('TOKEN_UNAVAILABLE');
     }
   });
 

@@ -15,11 +15,11 @@ import {
   ExceptionCatalog,
   exceptionPayload,
 } from '@Infra/adapters/exceptions/index.js';
-import { BlueprintV1Dto } from '@Infra/adapters/dto/blueprint-v1.dto.js';
+import { BlueprintV1Dto } from '@Infra/adapters/inbound/dto/blueprint-v1.dto.js';
 import {
-  BlueprintListDtoConverter,
+  EveItemDtoConverter,
   type EsiCharacterBlueprint,
-} from '@Infra/adapters/dto/blueprint-list-dto.converter.js';
+} from '@Infra/adapters/inbound/converters/eve-item-dto.converter.js';
 import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
 
 const ESI_USER_AGENT = 'neocom-back/0.1.0 (AdamAntinoo; https://github.com/AdamAntinoo/neocom-back)';
@@ -94,11 +94,11 @@ export async function readPilotBlueprintDtosFromEsi(
 ): Promise<BlueprintV1Dto[]> {
   try {
     const rows = await esi.characters.getCharacterBlueprints(pilotId);
-    return rows.map((row) => BlueprintListDtoConverter.toBlueprintV1Dto(row));
+    return rows.map((row) => EveItemDtoConverter.toBlueprintV1Dto(row));
   } catch (error) {
     if (isNotFound(error)) {
-      throw ExceptionCatalog.NOT_FOUND.doThrow(
-        `No blueprints for pilot id ${pilotId}.`,
+      throw ExceptionCatalog.BLUEPRINTS_NOT_FOUND.doThrow(
+        String(pilotId),
         exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
       );
     }
