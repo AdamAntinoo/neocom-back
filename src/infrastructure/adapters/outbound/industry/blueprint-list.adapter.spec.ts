@@ -1,15 +1,14 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NeocomBackendError } from 'neocom-domain';
 import { InMemoryProcessedNodeStore } from '@Outbound/persistence/in-memory-processed-node.store.js';
 import { EnrichmentQueueService } from '@Outbound/enrichment-queue/enrichment-queue.service.js';
 import { SseFanoutService } from '@Outbound/sse-fanout/sse-fanout.service.js';
-import { BlueprintListService } from './blueprint-list.service.js';
+import { BlueprintListAdapter } from './blueprint-list.adapter.js';
 
-describe('BlueprintListService', () => {
+describe('BlueprintListAdapter', () => {
   let store: InMemoryProcessedNodeStore;
-  let service: BlueprintListService;
+  let adapter: BlueprintListAdapter;
   let fanout: SseFanoutService;
   let createClient: ReturnType<typeof vi.fn>;
 
@@ -52,23 +51,26 @@ describe('BlueprintListService', () => {
       getToken: vi.fn(),
       tokenProviderFor: vi.fn(),
     };
-    service = new BlueprintListService(store, fanout, queue, tokens as never);
+    adapter = new BlueprintListAdapter(store, fanout, queue, tokens as never);
   });
 
   it('loads partial list from authenticated ESI on persistence miss', async () => {
-    const list = await service.getList(93813310);
-    expect(createClient).toHaveBeenCalledWith(93813310, expect.objectContaining({ userAgent: expect.any(String) }));
+    const list = await adapter.getList(93813310);
+    expect(createClient).toHaveBeenCalledWith(
+      93813310,
+      expect.objectContaining({ userAgent: expect.any(String) }),
+    );
     expect(list).toHaveLength(2);
     expect(list.every((b) => b.ready === false)).toBe(true);
     expect(list[0]?.blueprintId).toBe(1001);
-    const persisted = await store.listByScope(service.scopeKey(93813310));
+    const persisted = await store.listByScope(adapter.scopeKey(93813310));
     expect(persisted).toHaveLength(2);
   });
 
   it('returns persistence on subsequent requests without calling ESI again', async () => {
-    await service.getList(1);
+    await adapter.getList(1);
     createClient.mockClear();
-    const again = await service.getList(1);
+    const again = await adapter.getList(1);
     expect(createClient).not.toHaveBeenCalled();
     expect(again).toHaveLength(2);
   });
@@ -76,24 +78,24 @@ describe('BlueprintListService', () => {
   it('propagates TOKEN_UNAVAILABLE when createClient fails (no scaffold)', async () => {
     createClient.mockRejectedValue(new Error('no character'));
     try {
-      await service.getList(42);
+      await adapter.getList(42);
       expect.unreachable('should throw');
     } catch (error) {
       expect(error).toBeInstanceOf(NeocomBackendError);
-      expect((error as NeocomBackendError).httpStatus).toBe(HttpStatus.UNAUTHORIZED);
+      expect((error as NeocomBackendError).errors[0]?.code).toBe('TOKEN_UNAVAILABLE');
     }
-    const persisted = await store.listByScope(service.scopeKey(42));
+    const persisted = await store.listByScope(adapter.scopeKey(42));
     expect(persisted).toHaveLength(0);
   });
 
   it('enrichOne marks ready and publishes SSE payload', async () => {
-    await service.getList(2);
-    const scope = service.scopeKey(2);
+    await adapter.getList(2);
+    const scope = adapter.scopeKey(2);
     let received = false;
     const sub = fanout.stream(scope).subscribe(() => {
       received = true;
     });
-    await service.enrichOne(scope, '1001');
+    await adapter.enrichOne(scope, '1001');
     expect(received).toBe(true);
     const rows = await store.listByScope(scope);
     expect(rows.find((r) => r.nodeId === '1001')?.ready).toBe(true);

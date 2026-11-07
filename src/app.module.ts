@@ -8,6 +8,7 @@ import { NeocomBackendErrorFilter } from '@Infra/errors/neocom-backend-error.fil
 import { PilotModule } from '@Infra/pilot.module.js';
 import { IndustryModule } from '@Infra/industry.module.js';
 import { SpaceLocationModule } from '@Infra/spacelocation.module.js';
+import { UniverseModule } from '@Infra/universe.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
@@ -22,6 +23,7 @@ import { AppService } from './app.service.js';
     PilotModule,
     IndustryModule,
     SpaceLocationModule,
+    UniverseModule,
     AsyncModule,
   ],
   controllers: [AppController],

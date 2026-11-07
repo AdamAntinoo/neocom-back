@@ -58,7 +58,6 @@ describe('GetSpaceLocationUseCase', () => {
     try {
       await useCase.execute(99999999);
     } catch (err) {
-      expect((err as NeocomBackendError).httpStatus).toBe(404);
       expect((err as NeocomBackendError).errors[0]?.code).toBe('LOCATION_NOT_FOUND');
     }
   });

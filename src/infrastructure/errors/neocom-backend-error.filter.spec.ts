@@ -1,4 +1,3 @@
-import { HttpStatus } from '@nestjs/common';
 import { EsiError, EsiNetworkError } from '@lgriffin/esi.ts';
 import { describe, expect, it, vi } from 'vitest';
 import { NeocomBackendError } from 'neocom-domain';
@@ -15,10 +14,10 @@ function mockHost(status: ReturnType<typeof vi.fn>, json: ReturnType<typeof vi.f
 describe('NeocomBackendErrorFilter', () => {
   const filter = new NeocomBackendErrorFilter();
 
-  it('writes NeocomBackendError status and errors', () => {
+  it('maps NeocomBackendError code to HTTP status and writes errors', () => {
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
-    const error = new NeocomBackendError(HttpStatus.NOT_FOUND, [
+    const error = new NeocomBackendError(404, [
       { code: 'LOCATION_NOT_FOUND', description: 'missing' },
     ]);
 

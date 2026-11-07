@@ -3,8 +3,8 @@ import { catalogEntry } from 'neocom-domain';
 
 /**
  * Back-specific named exception catalog.
- * Entry machinery ({@link catalogEntry}, payload builder, {@link NeocomBackendError})
- * lives in `neocom-domain`; this file only lists this app's codes / messages / statuses.
+ * Each entry is **code + parametrized message + HTTP status** (neocom-domain `catalogEntry`).
+ * Payload (`field` / `container` / `value`) is supplied at throw time via the payload builder.
  */
 export const ExceptionCatalog = {
   INVALID_PILOT_ID: catalogEntry(
@@ -13,8 +13,35 @@ export const ExceptionCatalog = {
     HttpStatus.BAD_REQUEST,
   ),
 
-  /** Generic 404 — pass the description as `{0}`; payload names what was missing. */
-  NOT_FOUND: catalogEntry('NOT_FOUND', '{0}', HttpStatus.NOT_FOUND),
+  PILOT_NOT_FOUND: catalogEntry(
+    'PILOT_NOT_FOUND',
+    'No pilot exists for identifier {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  BLUEPRINTS_NOT_FOUND: catalogEntry(
+    'BLUEPRINTS_NOT_FOUND',
+    'No blueprints for pilot id {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  STORED_CHARACTERS_NOT_FOUND: catalogEntry(
+    'STORED_CHARACTERS_NOT_FOUND',
+    'No characters in tokens.json — log in via the front first.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  STORED_CHARACTER_NOT_FOUND: catalogEntry(
+    'STORED_CHARACTER_NOT_FOUND',
+    'No stored character for id {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  ENDPOINT_NOT_FOUND: catalogEntry(
+    'ENDPOINT_NOT_FOUND',
+    'No resource at {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
 
   PILOT_SOURCE_UNAVAILABLE: catalogEntry(
     'INTERNAL_SERVER_ERROR',
@@ -44,6 +71,24 @@ export const ExceptionCatalog = {
     'LOCATION_NOT_FOUND',
     'No SpaceLocation catalog entry for id {0}.',
     HttpStatus.NOT_FOUND,
+  ),
+
+  EVE_ITEM_NOT_FOUND: catalogEntry(
+    'EVE_ITEM_NOT_FOUND',
+    'No EveItemV1Dto for item id {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  MARKET_PRICE_NOT_FOUND: catalogEntry(
+    'MARKET_PRICE_NOT_FOUND',
+    'No hub price data for item id {0}.',
+    HttpStatus.NOT_FOUND,
+  ),
+
+  PRICED_ITEM_AUTH_REQUIRED: catalogEntry(
+    'UNAUTHORIZED',
+    'Access cookie / session is required to get priced EveItem id {0}.',
+    HttpStatus.UNAUTHORIZED,
   ),
 
   /** Structure id range requires authenticated ESI via the access cookie (LOC-135). */

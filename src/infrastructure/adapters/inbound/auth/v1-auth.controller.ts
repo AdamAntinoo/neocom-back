@@ -51,7 +51,8 @@ export class V1AuthController {
   private assertLocalToolingAllowed(): void {
     const environment = (this.config.get<string>('ENVIRONMENT') ?? '').toLowerCase();
     if (environment === 'production' || environment === 'prod') {
-      throw ExceptionCatalog.NOT_FOUND.doThrow(
+      throw ExceptionCatalog.ENDPOINT_NOT_FOUND.doThrow(
+        '/v1/auth/session',
         exceptionPayload()
           .field('path')
           .container('url')

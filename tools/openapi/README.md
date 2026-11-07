@@ -14,7 +14,7 @@ Each **inbound adapter** under `src/infrastructure/adapters/inbound/` has a matc
 
 Template style reference (external example): `gateway-adapter-service-v0.2.0.yaml`.
 
-Runtime TypeScript types come from **`neocom-domain`** and back DTOs under `infrastructure/adapters/dto`. Do **not** regenerate Nest DTO classes under `src/generated`.
+Runtime TypeScript types come from **`neocom-domain`** and back DTOs under `infrastructure/adapters/inbound/dto`. Do **not** regenerate Nest DTO classes under `src/generated`.
 
 ## Specs in this folder
 
@@ -24,7 +24,7 @@ Runtime TypeScript types come from **`neocom-domain`** and back DTOs under `infr
 | `pilot-service-v0.1.0.yaml` | pilot | `pilot/v1-pilot.controller.ts` |
 | `industry-service-v0.1.0.yaml` | industry | `industry/v1-industry.controller.ts` |
 | `manufacture-service-v0.1.0.yaml` | manufacture | `industry/v1-blueprint-list.controller.ts` |
-| `universe-service-v0.1.0.yaml` | universe | `universe/v1-spacelocation.controller.ts` |
+| `universe-service-v0.1.0.yaml` | universe | `universe/v1-universe.controller.ts` |
 | `gateway-adapter-service-v0.2.0.yaml` | *(template example only — not a NEOCOM runtime adapter)* | — |
 
 ## Postman
