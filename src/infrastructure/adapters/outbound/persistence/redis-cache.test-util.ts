@@ -15,9 +15,7 @@ export function createRedisMock() {
 export type RedisMockClient = ReturnType<typeof createRedisMock>;
 
 /** Pass no args for a default URL; pass `undefined` explicitly to leave REDIS_URL unset. */
-export function redisConfig(
-  ...args: [] | [string | undefined]
-): ConfigService {
+export function redisConfig(...args: [] | [string | undefined]): ConfigService {
   const url = args.length === 0 ? 'redis://localhost:6004' : args[0];
   return {
     get: (key: string) => (key === 'REDIS_URL' ? url : undefined),

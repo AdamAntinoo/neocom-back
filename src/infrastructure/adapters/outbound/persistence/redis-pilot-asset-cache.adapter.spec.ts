@@ -83,14 +83,15 @@ describe('RedisPilotAssetCache', () => {
     await waitUntilActive(cache);
 
     const nodes = await cache.get(93813310);
+    expect(nodes).toBeDefined();
     expect(nodes).toHaveLength(2);
-    expect(nodes?.[0]).toBeInstanceOf(EveAssetV1Dto);
-    expect(nodes?.[0].item).toBeInstanceOf(PricedItemV1Dto);
-    expect(nodes?.[0].location).toBeInstanceOf(EveLocationV1Dto);
-    expect(nodes?.[1]).toBeInstanceOf(LocatedAssetContainerV1Dto);
-    expect((nodes?.[1] as LocatedAssetContainerV1Dto).contents[0]).toBeInstanceOf(
-      EveAssetV1Dto,
-    );
+    const asset = nodes![0] as EveAssetV1Dto;
+    const container = nodes![1] as LocatedAssetContainerV1Dto;
+    expect(asset).toBeInstanceOf(EveAssetV1Dto);
+    expect(asset.item).toBeInstanceOf(PricedItemV1Dto);
+    expect(asset.location).toBeInstanceOf(EveLocationV1Dto);
+    expect(container).toBeInstanceOf(LocatedAssetContainerV1Dto);
+    expect(container.contents[0]).toBeInstanceOf(EveAssetV1Dto);
 
     await cache.set(93813310, nodes!);
     expect(redis.set).toHaveBeenCalledWith(

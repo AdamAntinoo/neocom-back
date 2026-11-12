@@ -78,7 +78,9 @@ describe('RedisLocationCache', () => {
   });
 
   it('returns undefined on cache miss and Redis get errors', async () => {
-    redis.get.mockResolvedValueOnce(null).mockRejectedValueOnce(new Error('boom'));
+    redis.get
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('boom'));
     const cache = new RedisLocationCache(redisConfig());
     await waitUntilActive(cache);
 
