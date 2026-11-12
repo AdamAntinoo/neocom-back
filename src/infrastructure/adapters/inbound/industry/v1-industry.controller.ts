@@ -22,7 +22,11 @@ export class V1IndustryController {
     if (!Number.isInteger(id)) {
       throw ExceptionCatalog.INVALID_PILOT_ID.doThrow(
         'pilotId',
-        exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
+        exceptionPayload()
+          .field('pilotId')
+          .container('path')
+          .value(String(pilotId))
+          .build(),
       );
     }
     return this.getPilotBlueprints.execute(id);

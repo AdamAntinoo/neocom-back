@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, Repository } from 'typeorm';
-import { ProcessedNodeRecord, ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
+import {
+  ProcessedNodeRecord,
+  ProcessedNodeStore,
+} from '@Domain/ports/processed-node.store.js';
 import { ProcessedNodeEntity } from './processed-node.entity.js';
 
 @Injectable()
@@ -38,8 +41,13 @@ export class TypeOrmProcessedNodeStore extends ProcessedNodeStore {
     return toRecord(saved);
   }
 
-  async queryIncompleteOrStale(scopeKey: string, now: Date = new Date()): Promise<ProcessedNodeRecord[]> {
-    const incomplete = await this.repo.find({ where: { scopeKey, ready: false } });
+  async queryIncompleteOrStale(
+    scopeKey: string,
+    now: Date = new Date(),
+  ): Promise<ProcessedNodeRecord[]> {
+    const incomplete = await this.repo.find({
+      where: { scopeKey, ready: false },
+    });
     const stale = await this.repo.find({
       where: { scopeKey, staleAfter: LessThanOrEqual(now) },
     });

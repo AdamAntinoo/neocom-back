@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NeocomBackendError } from 'neocom-domain';
-import { formatAccessCookie, parseAccessCookie } from '@Infra/adapters/services/auth-cookies.service.js';
+import {
+  formatAccessCookie,
+  parseAccessCookie,
+} from '@Infra/adapters/services/auth-cookies.service.js';
 import { AuthService } from './auth.service.js';
 
 describe('auth cookies', () => {
@@ -34,9 +37,9 @@ describe('AuthService', () => {
   const service = new AuthService(tokens as never);
 
   it('rejects a state mismatch without calling addCharacter', async () => {
-    await expect(service.exchangeCode('code', 'a', 'b', res as never)).rejects.toBeInstanceOf(
-      NeocomBackendError,
-    );
+    await expect(
+      service.exchangeCode('code', 'a', 'b', res as never),
+    ).rejects.toBeInstanceOf(NeocomBackendError);
     expect(tokens.addCharacter).not.toHaveBeenCalled();
   });
 
@@ -47,7 +50,12 @@ describe('AuthService', () => {
     });
     tokens.getToken.mockResolvedValue('access-token');
 
-    const result = await service.exchangeCode('code', 'state', 'state', res as never);
+    const result = await service.exchangeCode(
+      'code',
+      'state',
+      'state',
+      res as never,
+    );
 
     expect(result).toEqual({ characterId: 42, characterName: 'Pilot' });
     expect(res.cookie).toHaveBeenCalledWith(
@@ -60,17 +68,33 @@ describe('AuthService', () => {
         maxAge: 1_200_000,
       }),
     );
-    expect(res.clearCookie).toHaveBeenCalledWith('neocom_return', expect.any(Object));
-    expect(res.clearCookie).toHaveBeenCalledWith('neocom_sso_state', expect.any(Object));
+    expect(res.clearCookie).toHaveBeenCalledWith(
+      'neocom_return',
+      expect.any(Object),
+    );
+    expect(res.clearCookie).toHaveBeenCalledWith(
+      'neocom_sso_state',
+      expect.any(Object),
+    );
   });
 
   it('rewrites neocom_access when getToken succeeds for another character', async () => {
     tokens.getToken.mockResolvedValue('new-token');
-    tokens.getStoredToken.mockResolvedValue({ characterName: 'Other', characterId: 99 });
+    tokens.getStoredToken.mockResolvedValue({
+      characterName: 'Other',
+      characterId: 99,
+    });
 
-    const next = await service.refreshAccessCookie('old|Other|99', res as never);
+    const next = await service.refreshAccessCookie(
+      'old|Other|99',
+      res as never,
+    );
 
-    expect(next).toEqual({ accessToken: 'new-token', characterName: 'Other', characterId: 99 });
+    expect(next).toEqual({
+      accessToken: 'new-token',
+      characterName: 'Other',
+      characterId: 99,
+    });
     expect(res.cookie).toHaveBeenCalledWith(
       'neocom_access',
       'new-token|Other|99',
@@ -85,7 +109,9 @@ describe('AuthService', () => {
       expect.unreachable('should throw');
     } catch (error) {
       expect(error).toBeInstanceOf(NeocomBackendError);
-      expect((error as NeocomBackendError).errors[0]?.code).toBe('TOKEN_UNAVAILABLE');
+      expect((error as NeocomBackendError).errors[0]?.code).toBe(
+        'TOKEN_UNAVAILABLE',
+      );
     }
   });
 
@@ -95,7 +121,10 @@ describe('AuthService', () => {
       { characterId: 42, characterName: 'Pilot' },
     ]);
     tokens.getToken.mockResolvedValue('access-token');
-    tokens.getStoredToken.mockResolvedValue({ characterId: 42, characterName: 'Pilot' });
+    tokens.getStoredToken.mockResolvedValue({
+      characterId: 42,
+      characterName: 'Pilot',
+    });
 
     const payload = await service.bindStoredSession(42, res as never);
 
@@ -119,9 +148,14 @@ describe('AuthService', () => {
   });
 
   it('defaults bindStoredSession to the first stored character', async () => {
-    tokens.listCharacters.mockResolvedValue([{ characterId: 7, characterName: 'First' }]);
+    tokens.listCharacters.mockResolvedValue([
+      { characterId: 7, characterName: 'First' },
+    ]);
     tokens.getToken.mockResolvedValue('tok');
-    tokens.getStoredToken.mockResolvedValue({ characterId: 7, characterName: 'First' });
+    tokens.getStoredToken.mockResolvedValue({
+      characterId: 7,
+      characterName: 'First',
+    });
 
     const payload = await service.bindStoredSession(undefined, res as never);
 
@@ -131,8 +165,8 @@ describe('AuthService', () => {
 
   it('rejects bindStoredSession when storage is empty', async () => {
     tokens.listCharacters.mockResolvedValue([]);
-    await expect(service.bindStoredSession(undefined, res as never)).rejects.toBeInstanceOf(
-      NeocomBackendError,
-    );
+    await expect(
+      service.bindStoredSession(undefined, res as never),
+    ).rejects.toBeInstanceOf(NeocomBackendError);
   });
 });

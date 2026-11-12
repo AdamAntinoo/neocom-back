@@ -85,11 +85,15 @@ describe('GetPilotAssetsUseCase', () => {
       { execute: vi.fn() } as never,
       { execute: vi.fn() } as never,
     );
-    await expect(uc.execute(42, null)).rejects.toBeInstanceOf(NeocomBackendError);
+    await expect(uc.execute(42, null)).rejects.toBeInstanceOf(
+      NeocomBackendError,
+    );
   });
 
   it('returns cache hit without ESI', async () => {
-    const cached = [new EveAssetV1Dto({ itemId: 1, typeId: 34, item: priced(34) })];
+    const cached = [
+      new EveAssetV1Dto({ itemId: 1, typeId: 34, item: priced(34) }),
+    ];
     const port = { findAssetsByPilotId: vi.fn() };
     const cache = { get: vi.fn().mockResolvedValue(cached), set: vi.fn() };
     const uc = new GetPilotAssetsUseCase(
@@ -108,7 +112,11 @@ describe('GetPilotAssetsUseCase', () => {
     const port = { findAssetsByPilotId: vi.fn().mockResolvedValue(instances) };
     const cache = { get: vi.fn().mockResolvedValue(undefined), set: vi.fn() };
     const getPriced = {
-      execute: vi.fn().mockImplementation((typeId: number) => Promise.resolve(priced(typeId))),
+      execute: vi
+        .fn()
+        .mockImplementation((typeId: number) =>
+          Promise.resolve(priced(typeId)),
+        ),
     };
     const getEveItem = { execute: vi.fn() };
     const getLocation = {
@@ -148,13 +156,23 @@ describe('GetPilotAssetsUseCase', () => {
     };
     const cache = { get: vi.fn().mockResolvedValue(undefined), set: vi.fn() };
     const getPriced = {
-      execute: vi.fn().mockRejectedValue(
-        new NeocomBackendError(404, [{ code: 'MARKET_PRICE_NOT_FOUND', description: 'x' }]),
-      ),
+      execute: vi
+        .fn()
+        .mockRejectedValue(
+          new NeocomBackendError(404, [
+            { code: 'MARKET_PRICE_NOT_FOUND', description: 'x' },
+          ]),
+        ),
     };
     const getEveItem = {
       execute: vi.fn().mockResolvedValue(
-        new EveItemV1Dto({ typeId: 620, name: 'Ship', description: '', published: true, groupId: 1 }),
+        new EveItemV1Dto({
+          typeId: 620,
+          name: 'Ship',
+          description: '',
+          published: true,
+          groupId: 1,
+        }),
       ),
     };
     const getLocation = {

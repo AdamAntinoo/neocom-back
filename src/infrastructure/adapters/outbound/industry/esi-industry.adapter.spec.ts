@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EsiConfigurationError } from '@lgriffin/esi.ts';
 import { NeocomBackendError } from 'neocom-domain';
-import { attachPilotAccessToken, readPilotBlueprintDtosFromEsi } from './esi-industry.adapter.js';
+import {
+  attachPilotAccessToken,
+  readPilotBlueprintDtosFromEsi,
+} from './esi-industry.adapter.js';
 
 describe('readPilotBlueprintDtosFromEsi', () => {
   it('maps ESI rows into BlueprintV1Dto with location fields', async () => {
@@ -42,7 +45,9 @@ describe('readPilotBlueprintDtosFromEsi', () => {
       characters: {
         getCharacterBlueprints: vi
           .fn()
-          .mockRejectedValue(new EsiConfigurationError('NO_AUTH_TOKEN', 'missing token')),
+          .mockRejectedValue(
+            new EsiConfigurationError('NO_AUTH_TOKEN', 'missing token'),
+          ),
       },
     };
     try {
@@ -50,7 +55,9 @@ describe('readPilotBlueprintDtosFromEsi', () => {
       expect.unreachable('should throw');
     } catch (error) {
       expect(error).toBeInstanceOf(NeocomBackendError);
-      expect((error as NeocomBackendError).errors[0]?.code).toBe('TOKEN_UNAVAILABLE');
+      expect((error as NeocomBackendError).errors[0]?.code).toBe(
+        'TOKEN_UNAVAILABLE',
+      );
     }
   });
 });
@@ -84,6 +91,8 @@ describe('attachPilotAccessToken', () => {
       getToken: vi.fn().mockRejectedValue(new Error('missing')),
       tokenProviderFor: vi.fn(),
     };
-    await expect(attachPilotAccessToken(esi, tokens, 1)).rejects.toBeInstanceOf(NeocomBackendError);
+    await expect(attachPilotAccessToken(esi, tokens, 1)).rejects.toBeInstanceOf(
+      NeocomBackendError,
+    );
   });
 });

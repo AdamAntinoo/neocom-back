@@ -3,11 +3,7 @@
  * Aligns with neocom-domain `SpaceLocation` field contract.
  */
 export type LocationIdentifierType =
-  | 'REGION'
-  | 'CONSTELLATION'
-  | 'SOLAR_SYSTEM'
-  | 'STATION'
-  | 'STRUCTURE';
+  'REGION' | 'CONSTELLATION' | 'SOLAR_SYSTEM' | 'STATION' | 'STRUCTURE';
 
 export interface SpaceLocation {
   /** Programme domain type name on the wire (DOM-JSONCLASS-001 / 003). */

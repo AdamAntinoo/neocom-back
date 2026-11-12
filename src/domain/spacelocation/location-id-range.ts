@@ -3,11 +3,7 @@
  * system &lt; 40M, station &lt; 61M; otherwise structure.
  */
 export type LocationIdKind =
-  | 'REGION'
-  | 'CONSTELLATION'
-  | 'SOLAR_SYSTEM'
-  | 'STATION'
-  | 'STRUCTURE';
+  'REGION' | 'CONSTELLATION' | 'SOLAR_SYSTEM' | 'STATION' | 'STRUCTURE';
 
 export const LOCATION_ID_REGION_MAX = 20_000_000;
 export const LOCATION_ID_CONSTELLATION_MAX = 30_000_000;

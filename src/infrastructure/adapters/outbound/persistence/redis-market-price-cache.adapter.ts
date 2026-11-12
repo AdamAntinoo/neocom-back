@@ -18,7 +18,9 @@ export const MARKET_PRICE_CACHE_TTL_SECONDS = 5 * 60;
  * Inactive when REDIS_URL is unset or connect fails.
  */
 @Injectable()
-export class RedisMarketPriceCache implements MarketPriceCache, OnModuleDestroy {
+export class RedisMarketPriceCache
+  implements MarketPriceCache, OnModuleDestroy
+{
   private readonly logger = new Logger(RedisMarketPriceCache.name);
   private client: Redis | null = null;
   private active = false;
@@ -26,11 +28,16 @@ export class RedisMarketPriceCache implements MarketPriceCache, OnModuleDestroy 
   constructor(config: ConfigService) {
     const redisUrl = config.get<string>('REDIS_URL');
     if (!redisUrl) {
-      this.logger.log('REDIS_URL unset — market price cache inactive (ESI-only)');
+      this.logger.log(
+        'REDIS_URL unset — market price cache inactive (ESI-only)',
+      );
       return;
     }
     try {
-      this.client = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
+      this.client = new Redis(redisUrl, {
+        maxRetriesPerRequest: null,
+        lazyConnect: true,
+      });
       void this.connect().catch((err: unknown) => {
         this.logger.warn(`Market-price Redis connect failed: ${String(err)}`);
         this.active = false;

@@ -1,7 +1,17 @@
 import { EsiError } from '@lgriffin/esi.ts';
-import type { AllianceInfo, Ancestry, Bloodline, CharacterInfo, CorporationInfo, Race } from '@lgriffin/esi.ts';
+import type {
+  AllianceInfo,
+  Ancestry,
+  Bloodline,
+  CharacterInfo,
+  CorporationInfo,
+  Race,
+} from '@lgriffin/esi.ts';
 import { NeocomBackendError } from 'neocom-domain';
-import { readPilotFromEsi, type EsiPilotApi } from './esi-pilot-source.adapter.js';
+import {
+  readPilotFromEsi,
+  type EsiPilotApi,
+} from './esi-pilot-source.adapter.js';
 
 const info = {
   name: 'Perico Tuerto',
@@ -41,19 +51,37 @@ function esi(publicInfo: () => Promise<CharacterInfo>): EsiPilotApi {
   return {
     characters: {
       getCharacterPublicInfo: publicInfo,
-      getCharacterPortrait: () => Promise.resolve({ px128x128: 'https://img/pilot' }),
+      getCharacterPortrait: () =>
+        Promise.resolve({ px128x128: 'https://img/pilot' }),
     },
     corporations: {
       getCorporationInfo: () => Promise.resolve(corporation),
-      getCorporationIcon: () => Promise.resolve({ px128x128: 'https://img/corp' }),
+      getCorporationIcon: () =>
+        Promise.resolve({ px128x128: 'https://img/corp' }),
     },
     alliance: {
       getAllianceById: () => Promise.resolve(alliance),
       getIcons: () => Promise.resolve({ px128x128: 'https://img/ally' }),
     },
     universe: {
-      getRaces: () => Promise.resolve([{ race_id: 2, name: 'Caldari', description: 'State', alliance_id: 5 } as Race]),
-      getAncestries: () => Promise.resolve([{ id: 7, name: 'Merchandisers', bloodline_id: 1, description: 'trade' } as Ancestry]),
+      getRaces: () =>
+        Promise.resolve([
+          {
+            race_id: 2,
+            name: 'Caldari',
+            description: 'State',
+            alliance_id: 5,
+          } as Race,
+        ]),
+      getAncestries: () =>
+        Promise.resolve([
+          {
+            id: 7,
+            name: 'Merchandisers',
+            bloodline_id: 1,
+            description: 'trade',
+          } as Ancestry,
+        ]),
       getBloodlines: () =>
         Promise.resolve([
           {
@@ -76,7 +104,10 @@ function esi(publicInfo: () => Promise<CharacterInfo>): EsiPilotApi {
 
 describe('readPilotFromEsi', () => {
   it('maps public ESI character, corporation, portrait, and universe data onto the pilot', async () => {
-    const pilot = await readPilotFromEsi(esi(() => Promise.resolve(info)), 93813310);
+    const pilot = await readPilotFromEsi(
+      esi(() => Promise.resolve(info)),
+      93813310,
+    );
 
     expect(pilot.getJsonClass()).toBe('PilotV2');
     expect(pilot.getPilotId()).toBe(93813310);
@@ -96,7 +127,12 @@ describe('readPilotFromEsi', () => {
   });
 
   it('returns not found when ESI has no character', async () => {
-    await expect(readPilotFromEsi(esi(() => Promise.reject(new EsiError(404, 'missing'))), 93813310)).rejects.toMatchObject({
+    await expect(
+      readPilotFromEsi(
+        esi(() => Promise.reject(new EsiError(404, 'missing'))),
+        93813310,
+      ),
+    ).rejects.toMatchObject({
       errors: [
         {
           code: 'PILOT_NOT_FOUND',
@@ -110,7 +146,12 @@ describe('readPilotFromEsi', () => {
   });
 
   it('returns the pilot source unavailable when ESI is down', async () => {
-    await expect(readPilotFromEsi(esi(() => Promise.reject(new EsiError(503, 'unavailable'))), 93813310)).rejects.toMatchObject({
+    await expect(
+      readPilotFromEsi(
+        esi(() => Promise.reject(new EsiError(503, 'unavailable'))),
+        93813310,
+      ),
+    ).rejects.toMatchObject({
       errors: [
         {
           code: 'INTERNAL_SERVER_ERROR',

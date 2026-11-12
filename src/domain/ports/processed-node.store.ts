@@ -10,6 +10,11 @@ export type ProcessedNodeRecord = {
 
 export abstract class ProcessedNodeStore {
   abstract listByScope(scopeKey: string): Promise<ProcessedNodeRecord[]>;
-  abstract upsertItem(record: Omit<ProcessedNodeRecord, 'updatedAt'> & { updatedAt?: Date }): Promise<ProcessedNodeRecord>;
-  abstract queryIncompleteOrStale(scopeKey: string, now?: Date): Promise<ProcessedNodeRecord[]>;
+  abstract upsertItem(
+    record: Omit<ProcessedNodeRecord, 'updatedAt'> & { updatedAt?: Date },
+  ): Promise<ProcessedNodeRecord>;
+  abstract queryIncompleteOrStale(
+    scopeKey: string,
+    now?: Date,
+  ): Promise<ProcessedNodeRecord[]>;
 }

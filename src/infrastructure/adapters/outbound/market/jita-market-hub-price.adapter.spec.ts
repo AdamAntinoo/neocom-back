@@ -9,7 +9,8 @@ import {
 } from './jita-market-hub-price.adapter.js';
 
 function order(
-  partial: Partial<EsiRegionMarketOrder> & Pick<EsiRegionMarketOrder, 'price' | 'is_buy_order'>,
+  partial: Partial<EsiRegionMarketOrder> &
+    Pick<EsiRegionMarketOrder, 'price' | 'is_buy_order'>,
 ): EsiRegionMarketOrder {
   return {
     order_id: 1,
@@ -85,7 +86,10 @@ describe('JitaMarketHubPriceAdapter', () => {
       regionId: JITA_REGION_ID,
       solarSystemId: JITA_SYSTEM_ID,
     });
-    expect(cache.quotes.get(34)).toMatchObject({ buyPrice: 5.2, sellPrice: 5.4 });
+    expect(cache.quotes.get(34)).toMatchObject({
+      buyPrice: 5.2,
+      sellPrice: 5.4,
+    });
     expect(cache.orders.get(34)).toHaveLength(payload.length);
 
     const calledUrl = String(vi.mocked(fetch).mock.calls[0]?.[0]);

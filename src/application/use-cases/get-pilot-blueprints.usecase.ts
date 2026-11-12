@@ -19,7 +19,8 @@ const LOCATION_EMBED_SKIP_CODES = new Set(['LOCATION_NOT_FOUND', 'FORBIDDEN']);
 @Injectable()
 export class GetPilotBlueprintsUseCase {
   constructor(
-    @Inject(BLUEPRINT_DTO_LOADER) private readonly blueprints: BlueprintDtoLoader,
+    @Inject(BLUEPRINT_DTO_LOADER)
+    private readonly blueprints: BlueprintDtoLoader,
     private readonly getSpaceLocation: GetSpaceLocationUseCase,
     @Optional() @Inject(REQUEST) private readonly req: Request | null,
   ) {}
@@ -33,10 +34,17 @@ export class GetPilotBlueprintsUseCase {
    * Resolves location via {@link GetSpaceLocationUseCase} (BLP-015 / BLP-030 / LOC-138).
    * Catalog miss or ESI forbidden leaves `location` unset (list continues).
    */
-  private async embedCatalogLocation(dto: BlueprintV1Dto): Promise<BlueprintV1Dto> {
-    const auth = this.req ? parseAccessCookie(this.req.cookies?.[NEOCOM_ACCESS]) : null;
+  private async embedCatalogLocation(
+    dto: BlueprintV1Dto,
+  ): Promise<BlueprintV1Dto> {
+    const auth = this.req
+      ? parseAccessCookie(this.req.cookies?.[NEOCOM_ACCESS])
+      : null;
     try {
-      const location = await this.getSpaceLocation.execute(dto.locationId, auth);
+      const location = await this.getSpaceLocation.execute(
+        dto.locationId,
+        auth,
+      );
       dto.location = EveItemDtoConverter.toSpaceLocationV1Dto(location);
     } catch (error) {
       if (

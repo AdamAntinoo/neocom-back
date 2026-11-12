@@ -61,13 +61,23 @@ describe('PricedItemV1Dto', () => {
 
   it('rejects a missing marketHub on fromEveItem (ITEM-012)', () => {
     expect(() =>
-      PricedItemV1Dto.fromEveItem(item, 1, 2, null as unknown as EveLocationV1Dto),
+      PricedItemV1Dto.fromEveItem(
+        item,
+        1,
+        2,
+        null as unknown as EveLocationV1Dto,
+      ),
     ).toThrow(/marketHub/);
   });
 
   it('rejects a bare location id in place of marketHub object', () => {
     expect(() =>
-      PricedItemV1Dto.fromEveItem(item, 1, 2, 60003760 as unknown as EveLocationV1Dto),
+      PricedItemV1Dto.fromEveItem(
+        item,
+        1,
+        2,
+        60003760 as unknown as EveLocationV1Dto,
+      ),
     ).toThrow(/marketHub/);
   });
 

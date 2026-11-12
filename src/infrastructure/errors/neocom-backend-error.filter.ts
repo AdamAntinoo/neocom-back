@@ -1,4 +1,9 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpStatus,
+} from '@nestjs/common';
 import { EsiError, isEsiError } from '@lgriffin/esi.ts';
 import type { Response } from 'express';
 import { NeocomBackendError } from 'neocom-domain';
@@ -24,7 +29,9 @@ export class NeocomBackendErrorFilter implements ExceptionFilter {
           : HttpStatus.INTERNAL_SERVER_ERROR;
       response.status(status).json({
         errors: exception.errors,
-        ...(exception.traceId === undefined ? {} : { traceId: exception.traceId }),
+        ...(exception.traceId === undefined
+          ? {}
+          : { traceId: exception.traceId }),
       });
       return;
     }
@@ -44,7 +51,9 @@ export class NeocomBackendErrorFilter implements ExceptionFilter {
               : { field: 'url', container: 'esi', value: exception.url }),
           },
         ],
-        ...(exception.requestId === undefined ? {} : { requestId: exception.requestId }),
+        ...(exception.requestId === undefined
+          ? {}
+          : { requestId: exception.requestId }),
       });
       return;
     }

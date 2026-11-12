@@ -27,12 +27,19 @@ export class SseFanoutService implements OnModuleDestroy {
   private subscriber: Redis | null = null;
 
   constructor(private readonly config: ConfigService) {
-    this.prefix = this.config.get<string>('ASYNC_SSE_CHANNEL_PREFIX') ?? 'neocom:sse:';
+    this.prefix =
+      this.config.get<string>('ASYNC_SSE_CHANNEL_PREFIX') ?? 'neocom:sse:';
     const redisUrl = this.config.get<string>('REDIS_URL');
     if (redisUrl) {
       try {
-        this.publisher = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
-        this.subscriber = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
+        this.publisher = new Redis(redisUrl, {
+          maxRetriesPerRequest: null,
+          lazyConnect: true,
+        });
+        this.subscriber = new Redis(redisUrl, {
+          maxRetriesPerRequest: null,
+          lazyConnect: true,
+        });
         void this.connectRedis().catch((err: unknown) => {
           this.logger.warn(`Redis SSE fan-out connect failed: ${String(err)}`);
           this.publisher = null;
@@ -52,15 +59,21 @@ export class SseFanoutService implements OnModuleDestroy {
     await this.subscriber.connect();
     const pattern = `${this.prefix}*`;
     await this.subscriber.psubscribe(pattern);
-    this.subscriber.on('pmessage', (_pattern: string, channel: string, message: string) => {
-      const scopeKey = channel.slice(this.prefix.length);
-      try {
-        const payload = JSON.parse(message) as Omit<NodeUpdatedEvent, 'scopeKey'>;
-        this.local$.next({ scopeKey, ...payload });
-      } catch {
-        this.logger.warn(`Invalid SSE fan-out payload on ${channel}`);
-      }
-    });
+    this.subscriber.on(
+      'pmessage',
+      (_pattern: string, channel: string, message: string) => {
+        const scopeKey = channel.slice(this.prefix.length);
+        try {
+          const payload = JSON.parse(message) as Omit<
+            NodeUpdatedEvent,
+            'scopeKey'
+          >;
+          this.local$.next({ scopeKey, ...payload });
+        } catch {
+          this.logger.warn(`Invalid SSE fan-out payload on ${channel}`);
+        }
+      },
+    );
     this.logger.log(`SSE Redis fan-out subscribed to ${pattern}`);
   }
 

@@ -27,7 +27,11 @@ export function parseAccessCookie(raw: unknown): AccessCookieValue | null {
   const characterId = Number(parts[parts.length - 1]);
   const characterName = parts[parts.length - 2];
   const accessToken = parts.slice(0, parts.length - 2).join('|');
-  if (!Number.isFinite(characterId) || characterName === '' || accessToken === '') {
+  if (
+    !Number.isFinite(characterId) ||
+    characterName === '' ||
+    accessToken === ''
+  ) {
     return null;
   }
   return { accessToken, characterName, characterId };

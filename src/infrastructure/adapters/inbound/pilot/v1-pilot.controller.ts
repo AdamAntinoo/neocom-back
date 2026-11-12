@@ -1,4 +1,11 @@
-import { Controller, Get, Headers, Param, ParseIntPipe, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  Param,
+  ParseIntPipe,
+  Req,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import type { PilotV2, PublicPilotV1 } from 'neocom-domain';
 import { GetPilotUseCase } from '@App/use-cases/get-pilot.usecase.js';
@@ -30,10 +37,15 @@ export class V1PilotController implements PilotApi {
     if (!Number.isInteger(id)) {
       throw ExceptionCatalog.INVALID_PILOT_ID.doThrow(
         'pilotId',
-        exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
+        exceptionPayload()
+          .field('pilotId')
+          .container('path')
+          .value(String(pilotId))
+          .build(),
       );
     }
-    const loggedIn = typeof authorization === 'string' && authorization.trim().length > 0;
+    const loggedIn =
+      typeof authorization === 'string' && authorization.trim().length > 0;
     return this.getPilotUseCase.execute(id, loggedIn);
   }
 
@@ -55,6 +67,10 @@ export class V1PilotController implements PilotApi {
     @Req() req: Request,
   ): Promise<PilotAssetNode[]> {
     const auth = parseAccessCookie(req.cookies?.[NEOCOM_ACCESS]);
-    return this.getPilotAssetsUseCase.executeForLocation(pilotId, locationId, auth);
+    return this.getPilotAssetsUseCase.executeForLocation(
+      pilotId,
+      locationId,
+      auth,
+    );
   }
 }

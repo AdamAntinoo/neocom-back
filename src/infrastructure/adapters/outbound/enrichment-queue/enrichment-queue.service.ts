@@ -1,8 +1,16 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { Queue, Worker, type Job } from 'bullmq';
-import { NODE_ENRICHER, type NodeEnricher } from '@Domain/ports/node-enricher.port.js';
+import {
+  NODE_ENRICHER,
+  type NodeEnricher,
+} from '@Domain/ports/node-enricher.port.js';
 import { ProcessedNodeStore } from '@Domain/ports/processed-node.store.js';
 
 type EnrichJob = { scopeKey: string; nodeId: string };
@@ -25,7 +33,9 @@ export class EnrichmentQueueService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.enricher = this.moduleRef.get<NodeEnricher>(NODE_ENRICHER, { strict: false });
+    this.enricher = this.moduleRef.get<NodeEnricher>(NODE_ENRICHER, {
+      strict: false,
+    });
 
     const redisUrl = this.config.get<string>('REDIS_URL');
     if (!redisUrl) {
@@ -56,7 +66,11 @@ export class EnrichmentQueueService implements OnModuleInit, OnModuleDestroy {
 
   async enqueueOne(scopeKey: string, nodeId: string): Promise<void> {
     if (this.queue) {
-      await this.queue.add('enrich', { scopeKey, nodeId }, { removeOnComplete: true });
+      await this.queue.add(
+        'enrich',
+        { scopeKey, nodeId },
+        { removeOnComplete: true },
+      );
       return;
     }
     setTimeout(() => {

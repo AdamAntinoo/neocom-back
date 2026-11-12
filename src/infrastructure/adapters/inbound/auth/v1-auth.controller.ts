@@ -30,8 +30,15 @@ export class V1AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ characterId: number; characterName: string }> {
     const ssoState =
-      typeof req.cookies?.[NEOCOM_SSO_STATE] === 'string' ? req.cookies[NEOCOM_SSO_STATE] : undefined;
-    return this.auth.exchangeCode(body.code ?? '', body.state ?? '', ssoState, res);
+      typeof req.cookies?.[NEOCOM_SSO_STATE] === 'string'
+        ? req.cookies[NEOCOM_SSO_STATE]
+        : undefined;
+    return this.auth.exchangeCode(
+      body.code ?? '',
+      body.state ?? '',
+      ssoState,
+      res,
+    );
   }
 
   /**
@@ -49,7 +56,9 @@ export class V1AuthController {
   }
 
   private assertLocalToolingAllowed(): void {
-    const environment = (this.config.get<string>('ENVIRONMENT') ?? '').toLowerCase();
+    const environment = (
+      this.config.get<string>('ENVIRONMENT') ?? ''
+    ).toLowerCase();
     if (environment === 'production' || environment === 'prod') {
       throw ExceptionCatalog.ENDPOINT_NOT_FOUND.doThrow(
         '/v1/auth/session',
@@ -70,7 +79,11 @@ function parseOptionalCharacterId(raw: string | undefined): number | undefined {
   const id = Number(raw);
   if (!Number.isInteger(id)) {
     throw ExceptionCatalog.INVALID_PILOT_ID.doThrow(
-      exceptionPayload().field('characterId').container('query').value(raw).build(),
+      exceptionPayload()
+        .field('characterId')
+        .container('query')
+        .value(raw)
+        .build(),
     );
   }
   return id;

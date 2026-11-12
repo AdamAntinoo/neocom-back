@@ -22,12 +22,18 @@ describe('EveLocationV1Dto', () => {
   });
 
   it('accepts extended location kinds PLANET, SHIP, CARGO_HOLD', () => {
-    expect(new EveLocationV1Dto({ locationType: 'PLANET', planetId: 1 }).locationType).toBe(
-      'PLANET',
-    );
-    expect(new EveLocationV1Dto({ locationType: 'SHIP', shipId: 2 }).locationType).toBe('SHIP');
     expect(
-      new EveLocationV1Dto({ locationType: 'CARGO_HOLD', cargoHoldId: 'Hangar' }).locationType,
+      new EveLocationV1Dto({ locationType: 'PLANET', planetId: 1 })
+        .locationType,
+    ).toBe('PLANET');
+    expect(
+      new EveLocationV1Dto({ locationType: 'SHIP', shipId: 2 }).locationType,
+    ).toBe('SHIP');
+    expect(
+      new EveLocationV1Dto({
+        locationType: 'CARGO_HOLD',
+        cargoHoldId: 'Hangar',
+      }).locationType,
     ).toBe('CARGO_HOLD');
   });
 

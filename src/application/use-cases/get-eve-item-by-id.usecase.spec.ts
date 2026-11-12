@@ -6,7 +6,12 @@ import { NeocomBackendError } from 'neocom-domain';
 import { GetEveItemByIdUseCase } from './get-eve-item-by-id.usecase.js';
 
 describe('GetEveItemByIdUseCase', () => {
-  const sample = new EveItemV1Dto({ typeId: 34, name: 'Tritanium', published: true, groupId: 18 });
+  const sample = new EveItemV1Dto({
+    typeId: 34,
+    name: 'Tritanium',
+    published: true,
+    groupId: 18,
+  });
 
   it('returns cache hit without calling source (ITEM-018)', async () => {
     const cache: UniverseTypeCache = {
@@ -17,7 +22,10 @@ describe('GetEveItemByIdUseCase', () => {
     const source: UniverseTypeSource = { resolveByTypeId: vi.fn() };
     const uc = new GetEveItemByIdUseCase(cache, source);
 
-    await expect(uc.execute(34)).resolves.toMatchObject({ typeId: 34, name: 'Tritanium' });
+    await expect(uc.execute(34)).resolves.toMatchObject({
+      typeId: 34,
+      name: 'Tritanium',
+    });
     expect(source.resolveByTypeId).not.toHaveBeenCalled();
     expect(cache.set).not.toHaveBeenCalled();
   });
@@ -44,7 +52,9 @@ describe('GetEveItemByIdUseCase', () => {
       get: vi.fn().mockResolvedValue(undefined),
       set: vi.fn(),
     };
-    const source: UniverseTypeSource = { resolveByTypeId: vi.fn().mockResolvedValue(undefined) };
+    const source: UniverseTypeSource = {
+      resolveByTypeId: vi.fn().mockResolvedValue(undefined),
+    };
     const uc = new GetEveItemByIdUseCase(cache, source);
 
     await expect(uc.execute(999)).rejects.toBeInstanceOf(NeocomBackendError);

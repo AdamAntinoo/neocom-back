@@ -1,0 +1,42 @@
+# Back CI caller (CICD-B-076). Reusable stages live in neocom-meta @feature/cicd.
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/**
+      - feat/**
+      - fix/**
+      - release/**
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - main
+      - develop
+      - feature/**
+      - feat/**
+      - fix/**
+      - release/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  checks: write
+
+jobs:
+  ci:
+    uses: AdamAntinoo/neocom-meta/.github/workflows/back-ci.yml@feature/cicd
+    with:
+      node-version: 24.21.0
+      artifact-name: neocom-back
+      sonar-project-key: AdamAntinoo_neocom-back
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

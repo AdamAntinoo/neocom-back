@@ -28,11 +28,17 @@ describe('BlueprintV1Dto', () => {
   });
 
   it('clamps materialEfficiency to 0–10 and timeEfficiency to 0–20', () => {
-    expect(new BlueprintV1Dto({ materialEfficiency: 99 }).materialEfficiency).toBe(10);
-    expect(new BlueprintV1Dto({ materialEfficiency: -5 }).materialEfficiency).toBe(0);
+    expect(
+      new BlueprintV1Dto({ materialEfficiency: 99 }).materialEfficiency,
+    ).toBe(10);
+    expect(
+      new BlueprintV1Dto({ materialEfficiency: -5 }).materialEfficiency,
+    ).toBe(0);
     expect(new BlueprintV1Dto({ timeEfficiency: 99 }).timeEfficiency).toBe(20);
     expect(new BlueprintV1Dto({ timeEfficiency: -1 }).timeEfficiency).toBe(0);
-    expect(new BlueprintV1Dto({ materialEfficiency: Number.NaN }).materialEfficiency).toBe(0);
+    expect(
+      new BlueprintV1Dto({ materialEfficiency: Number.NaN }).materialEfficiency,
+    ).toBe(0);
   });
 
   it('derives Image Server icon URLs when type ids are set and URLs are empty', () => {
@@ -40,8 +46,12 @@ describe('BlueprintV1Dto', () => {
       blueprintTypeId: 31683,
       outputTypeId: 17715,
     });
-    expect(dto.blueprintTypeIconURL).toBe('https://images.evetech.net/types/31683/bp');
-    expect(dto.outputTypeIconURL).toBe('https://images.evetech.net/types/17715/icon');
+    expect(dto.blueprintTypeIconURL).toBe(
+      'https://images.evetech.net/types/31683/bp',
+    );
+    expect(dto.outputTypeIconURL).toBe(
+      'https://images.evetech.net/types/17715/icon',
+    );
   });
 
   it('keeps explicit icon URLs when provided', () => {

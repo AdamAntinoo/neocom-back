@@ -16,7 +16,9 @@ export class EsiRedisLocationCatalog implements LocationCatalog {
   private resolver: EsiLocationResolver;
 
   constructor(
-    @Optional() @Inject(LOCATION_CACHE) private readonly cache: LocationCache | null,
+    @Optional()
+    @Inject(LOCATION_CACHE)
+    private readonly cache: LocationCache | null,
   ) {
     this.resolver = EsiLocationResolver.createDefault();
   }

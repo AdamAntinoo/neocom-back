@@ -42,7 +42,9 @@ export class EsiLocationResolver {
   constructor(
     private readonly publicUniverse: PublicUniverseApi,
     private readonly corporationApi: CorporationNameApi,
-    private readonly createAuthedUniverse: (auth: LocationAuth) => AuthenticatedUniverseApi,
+    private readonly createAuthedUniverse: (
+      auth: LocationAuth,
+    ) => AuthenticatedUniverseApi,
   ) {}
 
   static createDefault(): EsiLocationResolver {
@@ -53,7 +55,8 @@ export class EsiLocationResolver {
     return new EsiLocationResolver(
       publicClient.universe,
       {
-        getCorporationInfo: (id) => publicClient.corporations.getCorporationInfo(id),
+        getCorporationInfo: (id) =>
+          publicClient.corporations.getCorporationInfo(id),
       },
       (auth) => {
         const authed = new EsiClient({
@@ -130,7 +133,8 @@ export class EsiLocationResolver {
       });
     }
     if (
-      (location.locationType === 'STATION' || location.locationType === 'STRUCTURE') &&
+      (location.locationType === 'STATION' ||
+        location.locationType === 'STRUCTURE') &&
       location.solarSystemId !== undefined &&
       location.solarSystemName !== undefined &&
       location.constellationId !== undefined &&
@@ -166,9 +170,14 @@ export class EsiLocationResolver {
     };
   }
 
-  private async buildConstellation(constellationId: number): Promise<SpaceLocation> {
-    const constellation = await this.publicUniverse.getConstellationById(constellationId);
-    const region = await this.publicUniverse.getRegionById(constellation.region_id);
+  private async buildConstellation(
+    constellationId: number,
+  ): Promise<SpaceLocation> {
+    const constellation =
+      await this.publicUniverse.getConstellationById(constellationId);
+    const region = await this.publicUniverse.getRegionById(
+      constellation.region_id,
+    );
     return {
       jsonClass: 'SpaceLocation',
       locationType: 'CONSTELLATION',
@@ -182,8 +191,12 @@ export class EsiLocationResolver {
 
   private async buildSolarSystem(systemId: number): Promise<SpaceLocation> {
     const system = await this.publicUniverse.getSystemById(systemId);
-    const constellation = await this.publicUniverse.getConstellationById(system.constellation_id);
-    const region = await this.publicUniverse.getRegionById(constellation.region_id);
+    const constellation = await this.publicUniverse.getConstellationById(
+      system.constellation_id,
+    );
+    const region = await this.publicUniverse.getRegionById(
+      constellation.region_id,
+    );
     return {
       jsonClass: 'SpaceLocation',
       locationType: 'SOLAR_SYSTEM',

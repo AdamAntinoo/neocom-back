@@ -13,7 +13,8 @@ const pilotFields = {
 
 describe('GetPilotUseCase', () => {
   const source: PilotPort = {
-    findById: (pilotId: number) => Promise.resolve(new PilotV2({ ...pilotFields, pilotId })),
+    findById: (pilotId: number) =>
+      Promise.resolve(new PilotV2({ ...pilotFields, pilotId })),
   };
   const useCase = new GetPilotUseCase(source);
 

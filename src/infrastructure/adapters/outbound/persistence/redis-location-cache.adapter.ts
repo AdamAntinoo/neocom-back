@@ -18,11 +18,16 @@ export class RedisLocationCache implements LocationCache, OnModuleDestroy {
   constructor(config: ConfigService) {
     const redisUrl = config.get<string>('REDIS_URL');
     if (!redisUrl) {
-      this.logger.log('REDIS_URL unset — location cache inactive (ESI-only resolve)');
+      this.logger.log(
+        'REDIS_URL unset — location cache inactive (ESI-only resolve)',
+      );
       return;
     }
     try {
-      this.client = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
+      this.client = new Redis(redisUrl, {
+        maxRetriesPerRequest: null,
+        lazyConnect: true,
+      });
       void this.connect().catch((err: unknown) => {
         this.logger.warn(`Location Redis connect failed: ${String(err)}`);
         this.active = false;
@@ -68,7 +73,10 @@ export class RedisLocationCache implements LocationCache, OnModuleDestroy {
       return;
     }
     try {
-      await this.client.set(`${KEY_PREFIX}${locationId}`, JSON.stringify(location));
+      await this.client.set(
+        `${KEY_PREFIX}${locationId}`,
+        JSON.stringify(location),
+      );
     } catch (err) {
       this.logger.warn(`Location Redis set failed: ${String(err)}`);
     }

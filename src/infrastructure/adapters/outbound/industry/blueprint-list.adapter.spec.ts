@@ -82,7 +82,9 @@ describe('BlueprintListAdapter', () => {
       expect.unreachable('should throw');
     } catch (error) {
       expect(error).toBeInstanceOf(NeocomBackendError);
-      expect((error as NeocomBackendError).errors[0]?.code).toBe('TOKEN_UNAVAILABLE');
+      expect((error as NeocomBackendError).errors[0]?.code).toBe(
+        'TOKEN_UNAVAILABLE',
+      );
     }
     const persisted = await store.listByScope(adapter.scopeKey(42));
     expect(persisted).toHaveLength(0);

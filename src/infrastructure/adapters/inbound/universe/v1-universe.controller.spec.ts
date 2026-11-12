@@ -24,7 +24,9 @@ describe('V1UniverseController', () => {
     });
 
     await expect(
-      controller.getSpaceLocationById(60008494, { cookies: { neocom_access: raw } } as never),
+      controller.getSpaceLocationById(60008494, {
+        cookies: { neocom_access: raw },
+      } as never),
     ).resolves.toBe(location);
     expect(space.execute).toHaveBeenCalledWith(60008494, {
       accessToken: 'tok',
@@ -34,7 +36,12 @@ describe('V1UniverseController', () => {
   });
 
   it('delegates eveitems without auth (ITEM-017)', async () => {
-    const item = new EveItemV1Dto({ typeId: 34, name: 'Tritanium', published: true, groupId: 18 });
+    const item = new EveItemV1Dto({
+      typeId: 34,
+      name: 'Tritanium',
+      published: true,
+      groupId: 18,
+    });
     (eve.execute as ReturnType<typeof vi.fn>).mockResolvedValue(item);
     const controller = new V1UniverseController(space, eve, priced);
 
@@ -44,10 +51,19 @@ describe('V1UniverseController', () => {
 
   it('delegates pricedeveitems with parsed access cookie (ITEM-020)', async () => {
     const body = PricedItemV1Dto.fromEveItem(
-      new EveItemV1Dto({ typeId: 34, name: 'Tritanium', published: true, groupId: 18 }),
+      new EveItemV1Dto({
+        typeId: 34,
+        name: 'Tritanium',
+        published: true,
+        groupId: 18,
+      }),
       1,
       2,
-      new EveLocationV1Dto({ locationType: 'STATION', locationId: 60003760, marketHub: true }),
+      new EveLocationV1Dto({
+        locationType: 'STATION',
+        locationId: 60003760,
+        marketHub: true,
+      }),
     );
     (priced.execute as ReturnType<typeof vi.fn>).mockResolvedValue(body);
     const controller = new V1UniverseController(space, eve, priced);
@@ -58,7 +74,9 @@ describe('V1UniverseController', () => {
     });
 
     await expect(
-      controller.getPricedEveItemById(34, { cookies: { neocom_access: raw } } as never),
+      controller.getPricedEveItemById(34, {
+        cookies: { neocom_access: raw },
+      } as never),
     ).resolves.toBe(body);
     expect(priced.execute).toHaveBeenCalledWith(34, {
       accessToken: 'tok',
@@ -68,7 +86,9 @@ describe('V1UniverseController', () => {
   });
 
   it('passes null auth for pricedeveitems when cookie missing (ITEM-016 / ITEM-021)', async () => {
-    (priced.execute as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('unauthorized'));
+    (priced.execute as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('unauthorized'),
+    );
     const controller = new V1UniverseController(space, eve, priced);
 
     await expect(

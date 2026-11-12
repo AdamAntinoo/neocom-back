@@ -13,18 +13,25 @@ const log = LayerLogger.for('outbound', 'RedisUniverseTypeCache');
  * Inactive when REDIS_URL is unset or connect fails.
  */
 @Injectable()
-export class RedisUniverseTypeCache implements UniverseTypeCache, OnModuleDestroy {
+export class RedisUniverseTypeCache
+  implements UniverseTypeCache, OnModuleDestroy
+{
   private client: Redis | null = null;
   private active = false;
 
   constructor(config: ConfigService) {
     const redisUrl = config.get<string>('REDIS_URL');
     if (!redisUrl) {
-      log.log('REDIS_URL unset — universe-type cache inactive (ESI-only resolve)');
+      log.log(
+        'REDIS_URL unset — universe-type cache inactive (ESI-only resolve)',
+      );
       return;
     }
     try {
-      this.client = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
+      this.client = new Redis(redisUrl, {
+        maxRetriesPerRequest: null,
+        lazyConnect: true,
+      });
       void this.connect().catch((err: unknown) => {
         log.warn(`Universe-type Redis connect failed: ${String(err)}`);
         this.active = false;

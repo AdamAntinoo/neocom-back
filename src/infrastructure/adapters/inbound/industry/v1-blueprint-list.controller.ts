@@ -1,10 +1,20 @@
-import { Controller, Get, Inject, Param, ParseIntPipe, Sse } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Sse,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import {
   BLUEPRINT_LIST,
   type BlueprintListPort,
 } from '@Domain/ports/blueprint-list.port.js';
-import { SseFanoutService, type SseMessage } from '@Outbound/sse-fanout/sse-fanout.service.js';
+import {
+  SseFanoutService,
+  type SseMessage,
+} from '@Outbound/sse-fanout/sse-fanout.service.js';
 
 /** Manufacture async list + SSE (BASSE-006). Distinct from sync Industry GET /v1/pilots/:pilotId/blueprints. */
 @Controller('v1/pilots/:pilotId/manufacture')
@@ -22,7 +32,9 @@ export class V1BlueprintListController {
 
   /** Scoped SSE stream for enrichment push (BASSE-001, BASSE-007). */
   @Sse('blueprints/events')
-  events(@Param('pilotId', ParseIntPipe) pilotId: number): Observable<SseMessage> {
+  events(
+    @Param('pilotId', ParseIntPipe) pilotId: number,
+  ): Observable<SseMessage> {
     return this.fanout.stream(this.blueprints.scopeKey(pilotId));
   }
 }

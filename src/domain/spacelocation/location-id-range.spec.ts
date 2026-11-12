@@ -8,8 +8,12 @@ import { LOCATION_FIXTURE } from './space-location.js';
 describe('classifyLocationId', () => {
   it('maps LocationFactory ranges', () => {
     expect(classifyLocationId(LOCATION_FIXTURE.regionId)).toBe('REGION');
-    expect(classifyLocationId(LOCATION_FIXTURE.constellationId)).toBe('CONSTELLATION');
-    expect(classifyLocationId(LOCATION_FIXTURE.solarSystemId)).toBe('SOLAR_SYSTEM');
+    expect(classifyLocationId(LOCATION_FIXTURE.constellationId)).toBe(
+      'CONSTELLATION',
+    );
+    expect(classifyLocationId(LOCATION_FIXTURE.solarSystemId)).toBe(
+      'SOLAR_SYSTEM',
+    );
     expect(classifyLocationId(LOCATION_FIXTURE.stationId)).toBe('STATION');
     expect(classifyLocationId(1_000_000_000_001)).toBe('STRUCTURE');
   });

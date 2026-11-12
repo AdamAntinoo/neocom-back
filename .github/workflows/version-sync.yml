@@ -1,15 +1,9 @@
-# Keep package version aligned with GitVersion MajorMinorPatch on each push.
+# Disabled: do not auto-sync versions on push (kept for optional manual runs).
+# Local/pre-commit still uses scripts/sync-version.mjs via package prepare hooks as needed.
 name: Version sync
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - feature/**
-      - feat/**
-      - fix/**
-      - release/**
+  workflow_dispatch:
 
 concurrency:
   group: version-sync-${{ github.ref }}

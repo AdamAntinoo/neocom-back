@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BlueprintDtoLoader } from '@App/ports/blueprint-dto-loader.port.js';
-import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
+import {
+  LOCATION_FIXTURE,
+  type SpaceLocation,
+} from '@Domain/spacelocation/space-location.js';
 import { BlueprintV1Dto } from '@Infra/adapters/inbound/dto/blueprint-v1.dto.js';
 import { NeocomBackendError } from 'neocom-domain';
 import { GetPilotBlueprintsUseCase } from './get-pilot-blueprints.usecase.js';
@@ -44,7 +47,10 @@ describe('GetPilotBlueprintsUseCase', () => {
     const result = await useCase.execute(42);
 
     expect(loader.loadPilotBlueprintDtos).toHaveBeenCalledWith(42);
-    expect(getSpaceLocation.execute).toHaveBeenCalledWith(LOCATION_FIXTURE.stationId, null);
+    expect(getSpaceLocation.execute).toHaveBeenCalledWith(
+      LOCATION_FIXTURE.stationId,
+      null,
+    );
     expect(result).toHaveLength(1);
     expect(result[0].jsonClass).toBe('BlueprintV1Dto');
     expect(result[0].locationId).toBe(LOCATION_FIXTURE.stationId);

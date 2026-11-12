@@ -15,7 +15,9 @@ describe('AppController', () => {
           provide: ConfigService,
           useValue: {
             get: (key: string) =>
-              ({ VERSION: '0.1.0', ENVIRONMENT: 'local', LOGLEVEL: 'debug' })[key],
+              ({ VERSION: '0.1.0', ENVIRONMENT: 'local', LOGLEVEL: 'debug' })[
+                key
+              ],
           },
         },
       ],

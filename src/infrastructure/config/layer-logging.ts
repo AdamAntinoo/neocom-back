@@ -11,7 +11,8 @@ import { Logger } from '@nestjs/common';
  * - `LOG_LAYERS=outbound` — only outbound adapter logs
  * - `LOG_LAYERS=inbound,outbound,http` — adapters + request middleware
  */
-export type LogLayer = 'http' | 'inbound' | 'application' | 'domain' | 'outbound';
+export type LogLayer =
+  'http' | 'inbound' | 'application' | 'domain' | 'outbound';
 
 const ALL_LAYERS: readonly LogLayer[] = [
   'http',
@@ -38,7 +39,13 @@ function readEnv(name: string): string | undefined {
 
 function parseLogLevel(raw: string | undefined): LogSeverity {
   const key = (raw ?? 'log').toLowerCase();
-  if (key === 'error' || key === 'warn' || key === 'log' || key === 'debug' || key === 'verbose') {
+  if (
+    key === 'error' ||
+    key === 'warn' ||
+    key === 'log' ||
+    key === 'debug' ||
+    key === 'verbose'
+  ) {
     return key;
   }
   // Accept common alias from .env.application

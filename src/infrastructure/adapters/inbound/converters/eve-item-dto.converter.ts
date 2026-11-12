@@ -13,9 +13,13 @@ export type EsiCharacterBlueprint = Awaited<
 >[number];
 
 /** ESI `GET /universe/types/{type_id}/` payload shape from `@lgriffin/esi.ts`. */
-export type EsiUniverseType = Awaited<ReturnType<EsiClient['universe']['getTypeById']>>;
+export type EsiUniverseType = Awaited<
+  ReturnType<EsiClient['universe']['getTypeById']>
+>;
 /** ESI `GET /universe/groups/{group_id}/` payload. */
-export type EsiItemGroup = Awaited<ReturnType<EsiClient['universe']['getItemGroupById']>>;
+export type EsiItemGroup = Awaited<
+  ReturnType<EsiClient['universe']['getItemGroupById']>
+>;
 /** ESI `GET /universe/categories/{category_id}/` payload. */
 export type EsiItemCategory = Awaited<
   ReturnType<EsiClient['universe']['getItemCategoryById']>
@@ -47,7 +51,10 @@ export class EveItemDtoConverter {
       from: 'EsiCharacterBlueprint',
       to: 'BlueprintV1Dto',
       ids: [dto.blueprintId],
-      fields: { blueprintTypeId: dto.blueprintTypeId, locationId: dto.locationId },
+      fields: {
+        blueprintTypeId: dto.blueprintTypeId,
+        locationId: dto.locationId,
+      },
     });
     return dto;
   }
@@ -120,7 +127,9 @@ export class EveItemDtoConverter {
       ...(type.packaged_volume !== undefined
         ? { packagedVolume: type.packaged_volume }
         : {}),
-      ...(type.portion_size !== undefined ? { portionSize: type.portion_size } : {}),
+      ...(type.portion_size !== undefined
+        ? { portionSize: type.portion_size }
+        : {}),
       ...(type.radius !== undefined ? { radius: type.radius } : {}),
       ...(type.volume !== undefined ? { volume: type.volume } : {}),
     });

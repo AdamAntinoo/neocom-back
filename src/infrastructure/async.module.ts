@@ -47,7 +47,9 @@ const useTypeOrm = Boolean(process.env['DATABASE_URL']);
     ...(useTypeOrm ? [TypeOrmProcessedNodeStore] : []),
     {
       provide: ProcessedNodeStore,
-      useExisting: useTypeOrm ? TypeOrmProcessedNodeStore : InMemoryProcessedNodeStore,
+      useExisting: useTypeOrm
+        ? TypeOrmProcessedNodeStore
+        : InMemoryProcessedNodeStore,
     },
   ],
   exports: [ProcessedNodeStore, BLUEPRINT_LIST, SseFanoutService],

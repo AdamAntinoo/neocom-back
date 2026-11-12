@@ -59,22 +59,38 @@ export class EsiPilotSource implements PilotPort, OnModuleDestroy {
   }
 }
 
-export async function readPilotFromEsi(esi: EsiPilotApi, pilotId: number): Promise<PilotV2> {
+export async function readPilotFromEsi(
+  esi: EsiPilotApi,
+  pilotId: number,
+): Promise<PilotV2> {
   try {
     const info = await esi.characters.getCharacterPublicInfo(pilotId);
-    const [portrait, corporation, races, ancestries, bloodlines] = await Promise.all([
-      optional(() => esi.characters.getCharacterPortrait(pilotId)),
-      readCorporation(esi, info.corporation_id, info.alliance_id),
-      esi.universe.getRaces(),
-      esi.universe.getAncestries(),
-      esi.universe.getBloodlines(),
-    ]);
-    return toPilot(pilotId, info, portrait, corporation, races, ancestries, bloodlines);
+    const [portrait, corporation, races, ancestries, bloodlines] =
+      await Promise.all([
+        optional(() => esi.characters.getCharacterPortrait(pilotId)),
+        readCorporation(esi, info.corporation_id, info.alliance_id),
+        esi.universe.getRaces(),
+        esi.universe.getAncestries(),
+        esi.universe.getBloodlines(),
+      ]);
+    return toPilot(
+      pilotId,
+      info,
+      portrait,
+      corporation,
+      races,
+      ancestries,
+      bloodlines,
+    );
   } catch (error) {
     if (isNotFound(error)) {
       throw ExceptionCatalog.PILOT_NOT_FOUND.doThrow(
         String(pilotId),
-        exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
+        exceptionPayload()
+          .field('pilotId')
+          .container('path')
+          .value(String(pilotId))
+          .build(),
       );
     }
     if (isServerError(error) || isNetworkError(error)) {
@@ -94,7 +110,8 @@ async function readCorporation(
     optional(() => esi.corporations.getCorporationIcon(corporationId)),
   ]);
   const allianceId = info?.alliance_id ?? characterAllianceId;
-  const alliance = allianceId === undefined ? undefined : await readAlliance(esi, allianceId);
+  const alliance =
+    allianceId === undefined ? undefined : await readAlliance(esi, allianceId);
   return {
     corporationId,
     ...(info === undefined
@@ -116,7 +133,10 @@ async function readCorporation(
   };
 }
 
-async function readAlliance(esi: EsiPilotApi, allianceId: number): Promise<AllianceV1 | undefined> {
+async function readAlliance(
+  esi: EsiPilotApi,
+  allianceId: number,
+): Promise<AllianceV1 | undefined> {
   const [info, icon] = await Promise.all([
     optional(() => esi.alliance.getAllianceById(allianceId)),
     optional(() => esi.alliance.getIcons(allianceId)),
@@ -141,8 +161,13 @@ function toPilot(
   bloodlines: Bloodline[],
 ): PilotV2 {
   const race = races.find((item) => item.race_id === info.race_id);
-  const ancestry = info.ancestry_id === undefined ? undefined : ancestries.find((item) => item.id === info.ancestry_id);
-  const bloodline = bloodlines.find((item) => item.bloodline_id === info.bloodline_id);
+  const ancestry =
+    info.ancestry_id === undefined
+      ? undefined
+      : ancestries.find((item) => item.id === info.ancestry_id);
+  const bloodline = bloodlines.find(
+    (item) => item.bloodline_id === info.bloodline_id,
+  );
   const portraitUrl = iconUrl(portrait);
   return new PilotV2({
     pilotId,
@@ -157,11 +182,18 @@ function toPilot(
       name: corporation.name,
     },
     alliance: corporation.alliance
-      ? { allianceId: corporation.alliance.allianceId, name: corporation.alliance.name }
+      ? {
+          allianceId: corporation.alliance.allianceId,
+          name: corporation.alliance.name,
+        }
       : undefined,
     raceData: race?.name === undefined ? undefined : { name: race.name },
-    ...(ancestry === undefined ? {} : { ancestryData: { name: ancestry.name } }),
-    ...(bloodline === undefined ? {} : { bloodlineData: { name: bloodline.name } }),
+    ...(ancestry === undefined
+      ? {}
+      : { ancestryData: { name: ancestry.name } }),
+    ...(bloodline === undefined
+      ? {}
+      : { bloodlineData: { name: bloodline.name } }),
   });
 }
 

@@ -44,7 +44,9 @@ export class BlueprintListAdapter implements BlueprintListPort, NodeEnricher {
     const now = new Date();
 
     if (existing.length > 0) {
-      const stale = existing.some((r) => r.staleAfter != null && r.staleAfter <= now);
+      const stale = existing.some(
+        (r) => r.staleAfter != null && r.staleAfter <= now,
+      );
       if (stale) {
         void this.queue.enqueueScope(scope);
       }
@@ -106,17 +108,23 @@ export class BlueprintListAdapter implements BlueprintListPort, NodeEnricher {
    * Persistence miss: authenticated ESI character blueprints (BASSE-011).
    * No scaffold fallback — token/ESI failures propagate as NeocomBackendError.
    */
-  private async buildPartialFromEsi(pilotId: number): Promise<BlueprintListItem[]> {
+  private async buildPartialFromEsi(
+    pilotId: number,
+  ): Promise<BlueprintListItem[]> {
     let client: EsiClient;
     try {
-      client = await this.tokens.createClient(pilotId, { userAgent: ESI_USER_AGENT });
+      client = await this.tokens.createClient(pilotId, {
+        userAgent: ESI_USER_AGENT,
+      });
     } catch {
       throw ExceptionCatalog.TOKEN_UNAVAILABLE.doThrow();
     }
 
     try {
       const dtos = await readPilotBlueprintDtosFromEsi(client, pilotId);
-      this.logger.debug(`ESI miss path for pilot ${pilotId} — ${dtos.length} blueprints from ESI`);
+      this.logger.debug(
+        `ESI miss path for pilot ${pilotId} — ${dtos.length} blueprints from ESI`,
+      );
       return dtos.map((bp) => ({
         jsonClass: 'ProcessedBlueprint' as const,
         blueprintId: bp.blueprintId,
@@ -143,8 +151,10 @@ function recordToItem(record: {
     blueprintId: Number(record.simplified['blueprintId'] ?? record.nodeId),
     name: String(record.simplified['name'] ?? '-'),
     ready: record.ready,
-    manufactureIndex: (record.calculated['manufactureIndex'] as number | null) ?? null,
+    manufactureIndex:
+      (record.calculated['manufactureIndex'] as number | null) ?? null,
     marketCost: (record.calculated['marketCost'] as number | null) ?? null,
-    manufactureCost: (record.calculated['manufactureCost'] as number | null) ?? null,
+    manufactureCost:
+      (record.calculated['manufactureCost'] as number | null) ?? null,
   };
 }

@@ -23,13 +23,21 @@ export class EsiUniverseTypeSource implements UniverseTypeSource {
   async resolveByTypeId(typeId: number): Promise<EveItemV1Dto | undefined> {
     try {
       const type = await this.esi.universe.getTypeById(typeId);
-      let group: Awaited<ReturnType<typeof this.esi.universe.getItemGroupById>> | undefined;
-      let category: Awaited<ReturnType<typeof this.esi.universe.getItemCategoryById>> | undefined;
+      let group:
+        | Awaited<ReturnType<typeof this.esi.universe.getItemGroupById>>
+        | undefined;
+      let category:
+        | Awaited<ReturnType<typeof this.esi.universe.getItemCategoryById>>
+        | undefined;
       try {
         group = await this.esi.universe.getItemGroupById(type.group_id);
-        category = await this.esi.universe.getItemCategoryById(group.category_id);
+        category = await this.esi.universe.getItemCategoryById(
+          group.category_id,
+        );
       } catch (err) {
-        log.warn(`Universe type expansion failed for type ${typeId}: ${String(err)}`);
+        log.warn(
+          `Universe type expansion failed for type ${typeId}: ${String(err)}`,
+        );
       }
       const dto = EveItemDtoConverter.fromEsiType(type, group, category);
       log.dtoConverted({

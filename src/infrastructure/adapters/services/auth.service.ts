@@ -19,7 +19,9 @@ import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
 
 @Injectable()
 export class AuthService {
-  constructor(@Inject(ESI_TOKEN_MANAGER) private readonly tokens: EsiTokenManager) {}
+  constructor(
+    @Inject(ESI_TOKEN_MANAGER) private readonly tokens: EsiTokenManager,
+  ) {}
 
   /** BACK-015 — exchange code on matching state and set `neocom_access`. */
   async exchangeCode(
@@ -30,7 +32,11 @@ export class AuthService {
   ): Promise<{ characterId: number; characterName: string }> {
     if (!code || !state || state !== ssoStateCookie) {
       throw ExceptionCatalog.SSO_STATE_MISMATCH.doThrow(
-        exceptionPayload().field('state').container('body').value(state).build(),
+        exceptionPayload()
+          .field('state')
+          .container('body')
+          .value(state)
+          .build(),
       );
     }
 
@@ -42,14 +48,20 @@ export class AuthService {
       characterId: stored.characterId,
     });
     clearLoginCookies(res);
-    return { characterId: stored.characterId, characterName: stored.characterName };
+    return {
+      characterId: stored.characterId,
+      characterName: stored.characterName,
+    };
   }
 
   /**
    * BACK-016 / BACK-017 — reuse or refresh token for the character in the cookie.
    * Rewrites `neocom_access`; returns 401 when replacement fails.
    */
-  async refreshAccessCookie(rawCookie: unknown, res: Response): Promise<AccessCookieValue> {
+  async refreshAccessCookie(
+    rawCookie: unknown,
+    res: Response,
+  ): Promise<AccessCookieValue> {
     const parsed = parseAccessCookie(rawCookie);
     if (parsed == null) {
       throw unauthorized();

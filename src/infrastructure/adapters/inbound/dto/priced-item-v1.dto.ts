@@ -29,7 +29,9 @@ export class PricedItemV1Dto extends EveItemV1Dto {
     marketHub: EveLocationV1Dto,
   ): PricedItemV1Dto {
     if (marketHub == null || typeof marketHub !== 'object') {
-      throw new Error('PricedItemV1Dto requires marketHub as EveLocationV1Dto (not a bare id)');
+      throw new Error(
+        'PricedItemV1Dto requires marketHub as EveLocationV1Dto (not a bare id)',
+      );
     }
     return new PricedItemV1Dto({
       ...item,

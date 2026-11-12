@@ -22,7 +22,8 @@ import {
 import { ESI_TOKEN_MANAGER } from '@Infra/auth/esi-token-manager.provider.js';
 import { LayerLogger } from '@Infra/config/layer-logging.js';
 
-const ESI_USER_AGENT = 'neocom-back/0.1.0 (AdamAntinoo; https://github.com/AdamAntinoo/neocom-back)';
+const ESI_USER_AGENT =
+  'neocom-back/0.1.0 (AdamAntinoo; https://github.com/AdamAntinoo/neocom-back)';
 const NAMES_CHUNK = 1000;
 const log = LayerLogger.for('outbound', 'EsiPilotAssetsAdapter');
 
@@ -30,7 +31,10 @@ const log = LayerLogger.for('outbound', 'EsiPilotAssetsAdapter');
 export interface EsiPilotAssetsApi {
   assets: {
     getCharacterAssets(characterId: number): Promise<CharacterAsset[]>;
-    postCharacterAssetNames(characterId: number, itemIds: number[]): Promise<AssetName[]>;
+    postCharacterAssetNames(
+      characterId: number,
+      itemIds: number[],
+    ): Promise<AssetName[]>;
   };
 }
 
@@ -41,7 +45,9 @@ export interface EsiPilotAssetsApi {
 export class EsiPilotAssetsAdapter implements PilotAssetsPort, OnModuleDestroy {
   private readonly clients = new Map<number, EsiClient>();
 
-  constructor(@Inject(ESI_TOKEN_MANAGER) private readonly tokens: EsiTokenManager) {}
+  constructor(
+    @Inject(ESI_TOKEN_MANAGER) private readonly tokens: EsiTokenManager,
+  ) {}
 
   async findAssetsByPilotId(pilotId: number): Promise<PilotAssetInstance[]> {
     const esi = await this.clientFor(pilotId);
@@ -61,7 +67,9 @@ export class EsiPilotAssetsAdapter implements PilotAssetsPort, OnModuleDestroy {
       return existing;
     }
     try {
-      const client = await this.tokens.createClient(pilotId, { userAgent: ESI_USER_AGENT });
+      const client = await this.tokens.createClient(pilotId, {
+        userAgent: ESI_USER_AGENT,
+      });
       this.clients.set(pilotId, client);
     } catch {
       throw ExceptionCatalog.TOKEN_UNAVAILABLE.doThrow();
@@ -76,8 +84,14 @@ export async function readPilotAssetsFromEsi(
 ): Promise<PilotAssetInstance[]> {
   try {
     const rows = await esi.assets.getCharacterAssets(pilotId);
-    const names = await loadAssetNames(esi, pilotId, rows.map((r) => r.item_id));
-    const mapped = rows.map((row) => mapRow(row, pilotId, names.get(row.item_id)));
+    const names = await loadAssetNames(
+      esi,
+      pilotId,
+      rows.map((r) => r.item_id),
+    );
+    const mapped = rows.map((row) =>
+      mapRow(row, pilotId, names.get(row.item_id)),
+    );
     log.dtoConverted({
       from: 'CharacterAsset(+names)',
       to: 'PilotAssetInstance',
@@ -90,15 +104,27 @@ export async function readPilotAssetsFromEsi(
     if (isNotFound(error)) {
       throw ExceptionCatalog.ASSETS_NOT_FOUND.doThrow(
         String(pilotId),
-        exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
+        exceptionPayload()
+          .field('pilotId')
+          .container('path')
+          .value(String(pilotId))
+          .build(),
       );
     }
-    if (isUnauthorized(error) || isAuthError(error) || isConfigurationError(error)) {
+    if (
+      isUnauthorized(error) ||
+      isAuthError(error) ||
+      isConfigurationError(error)
+    ) {
       throw ExceptionCatalog.TOKEN_UNAVAILABLE.doThrow();
     }
     if (isNetworkError(error) || isServerError(error)) {
       throw ExceptionCatalog.ESI_ASSETS_UNAVAILABLE.doThrow(
-        exceptionPayload().field('pilotId').container('path').value(String(pilotId)).build(),
+        exceptionPayload()
+          .field('pilotId')
+          .container('path')
+          .value(String(pilotId))
+          .build(),
       );
     }
     throw error;
@@ -138,7 +164,9 @@ function mapRow(
     locationType: row.location_type,
     locationFlag: row.location_flag,
     isSingleton: row.is_singleton,
-    ...(row.is_blueprint_copy !== undefined ? { isBlueprintCopy: row.is_blueprint_copy } : {}),
+    ...(row.is_blueprint_copy !== undefined
+      ? { isBlueprintCopy: row.is_blueprint_copy }
+      : {}),
     ...(name !== undefined ? { name } : {}),
     ownerPilotId,
   };

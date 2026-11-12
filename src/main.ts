@@ -10,7 +10,9 @@ import { AppModule } from './app.module.js';
 const nestVersion = (
   JSON.parse(
     readFileSync(
-      fileURLToPath(new URL('../node_modules/@nestjs/core/package.json', import.meta.url)),
+      fileURLToPath(
+        new URL('../node_modules/@nestjs/core/package.json', import.meta.url),
+      ),
       'utf8',
     ),
   ) as { version: string }
@@ -34,9 +36,21 @@ function loggers(level: string): LogLevel[] {
 function printData(configService: ConfigService) {
   const port = configService.get<number>('PORT') || 3000;
   const logLevel = process.env.LOGLEVEL;
-  console.log('Nest JS Server version: ' + START_GREEN + nestVersion + END_ENHANCED);
-  console.log('Reading environment: ' + START_YELLOW + process.env.ENVIRONMENT + END_ENHANCED);
-  console.log('Running environment: ' + START_YELLOW + process.env.NODE_ENV + END_ENHANCED);
+  console.log(
+    'Nest JS Server version: ' + START_GREEN + nestVersion + END_ENHANCED,
+  );
+  console.log(
+    'Reading environment: ' +
+      START_YELLOW +
+      process.env.ENVIRONMENT +
+      END_ENHANCED,
+  );
+  console.log(
+    'Running environment: ' +
+      START_YELLOW +
+      process.env.NODE_ENV +
+      END_ENHANCED,
+  );
   console.log('Version: ' + START_YELLOW + process.env.VERSION + END_ENHANCED);
   console.log('LogLevel: ' + START_RED + logLevel + END_ENHANCED);
   console.log('Listening on port: ' + START_YELLOW + port + END_ENHANCED);
@@ -59,14 +73,18 @@ async function bootstrap() {
 
   await printBanner(process.env.BANNER);
 
-  const app = await NestFactory.create(AppModule, { logger: loggers(logLevel) });
+  const app = await NestFactory.create(AppModule, {
+    logger: loggers(logLevel),
+  });
   app.use(cookieParser());
   const configService = app.get(ConfigService);
   const port = Number(configService.get('PORT')) || 3000;
   await app.listen(port);
 
   printData(configService);
-  console.log(START_GREEN + '>>> Server Ready for Connections <<<' + END_ENHANCED);
+  console.log(
+    START_GREEN + '>>> Server Ready for Connections <<<' + END_ENHANCED,
+  );
 }
 
 await bootstrap();

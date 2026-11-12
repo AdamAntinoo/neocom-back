@@ -72,7 +72,9 @@ describe('GetPricedItemByIdUseCase', () => {
     };
     const uc = new GetPricedItemByIdUseCase(getEve, prices);
 
-    await expect(uc.execute(34, auth)).rejects.toBeInstanceOf(NeocomBackendError);
+    await expect(uc.execute(34, auth)).rejects.toBeInstanceOf(
+      NeocomBackendError,
+    );
     await expect(uc.execute(34, auth)).rejects.toMatchObject({
       errors: [expect.objectContaining({ code: 'MARKET_PRICE_NOT_FOUND' })],
     });

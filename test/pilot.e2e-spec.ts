@@ -24,7 +24,8 @@ describe('Pilot endpoint (e2e)', () => {
     })
       .overrideProvider(PILOT_PORT)
       .useValue({
-        findById: (pilotId: number) => Promise.resolve(new PilotV2({ ...pilotFields, pilotId })),
+        findById: (pilotId: number) =>
+          Promise.resolve(new PilotV2({ ...pilotFields, pilotId })),
       })
       .compile();
 

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { GetSpaceLocationUseCase } from './get-space-location.usecase.js';
 import type { LocationCatalog } from '@Domain/ports/location-catalog.port.js';
-import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
+import {
+  LOCATION_FIXTURE,
+  type SpaceLocation,
+} from '@Domain/spacelocation/space-location.js';
 import { NeocomBackendError } from 'neocom-domain';
 
 const fixtureStation: SpaceLocation = {
@@ -54,11 +57,15 @@ describe('GetSpaceLocationUseCase', () => {
   });
 
   it('throws LOCATION_NOT_FOUND on catalog miss', async () => {
-    await expect(useCase.execute(99999999)).rejects.toBeInstanceOf(NeocomBackendError);
+    await expect(useCase.execute(99999999)).rejects.toBeInstanceOf(
+      NeocomBackendError,
+    );
     try {
       await useCase.execute(99999999);
     } catch (err) {
-      expect((err as NeocomBackendError).errors[0]?.code).toBe('LOCATION_NOT_FOUND');
+      expect((err as NeocomBackendError).errors[0]?.code).toBe(
+        'LOCATION_NOT_FOUND',
+      );
     }
   });
 });

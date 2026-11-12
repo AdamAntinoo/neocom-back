@@ -34,7 +34,11 @@ export class GetEveItemByIdUseCase {
     if (!resolved) {
       throw ExceptionCatalog.EVE_ITEM_NOT_FOUND.doThrow(
         itemId,
-        exceptionPayload().field('itemId').container('path').value(String(itemId)).build(),
+        exceptionPayload()
+          .field('itemId')
+          .container('path')
+          .value(String(itemId))
+          .build(),
       );
     }
 

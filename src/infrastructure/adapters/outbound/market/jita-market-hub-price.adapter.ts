@@ -1,5 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { HubPriceQuote, MarketHubPricePort } from '@Domain/ports/market-hub-price.port.js';
+import type {
+  HubPriceQuote,
+  MarketHubPricePort,
+} from '@Domain/ports/market-hub-price.port.js';
 import {
   MARKET_PRICE_CACHE,
   type MarketOrderSnapshot,
@@ -61,7 +64,9 @@ export class JitaMarketHubPriceAdapter implements MarketHubPricePort {
     });
   }
 
-  async searchPricesForType(typeId: number): Promise<HubPriceQuote | undefined> {
+  async searchPricesForType(
+    typeId: number,
+  ): Promise<HubPriceQuote | undefined> {
     const cachedQuote = await this.priceCache.getQuote(typeId);
     if (cachedQuote) {
       return cachedQuote;
@@ -75,7 +80,9 @@ export class JitaMarketHubPriceAdapter implements MarketHubPricePort {
     return quote;
   }
 
-  private quoteFromOrders(orders: MarketOrderSnapshot): HubPriceQuote | undefined {
+  private quoteFromOrders(
+    orders: MarketOrderSnapshot,
+  ): HubPriceQuote | undefined {
     const atHub = orders.filter((o) => o.location_id === JITA_STATION_ID);
     const buyPrices = atHub.filter((o) => o.is_buy_order).map((o) => o.price);
     const sellPrices = atHub.filter((o) => !o.is_buy_order).map((o) => o.price);
@@ -105,7 +112,9 @@ export class JitaMarketHubPriceAdapter implements MarketHubPricePort {
   /**
    * ESI `GET /markets/10000002/orders` with `type_id` query (same endpoint; avoids full-region download).
    */
-  private async fetchOrdersForType(typeId: number): Promise<EsiRegionMarketOrder[]> {
+  private async fetchOrdersForType(
+    typeId: number,
+  ): Promise<EsiRegionMarketOrder[]> {
     const collected: EsiRegionMarketOrder[] = [];
     let page = 1;
     let totalPages = 1;

@@ -21,11 +21,18 @@ export class GetPricedItemByIdUseCase {
     @Inject(MARKET_HUB_PRICE) private readonly prices: MarketHubPricePort,
   ) {}
 
-  async execute(itemId: number, auth: AccessCookieValue | null): Promise<PricedItemV1Dto> {
+  async execute(
+    itemId: number,
+    auth: AccessCookieValue | null,
+  ): Promise<PricedItemV1Dto> {
     if (auth == null) {
       throw ExceptionCatalog.PRICED_ITEM_AUTH_REQUIRED.doThrow(
         itemId,
-        exceptionPayload().field('cookie').container('header').value(String(itemId)).build(),
+        exceptionPayload()
+          .field('cookie')
+          .container('header')
+          .value(String(itemId))
+          .build(),
       );
     }
 
@@ -34,10 +41,19 @@ export class GetPricedItemByIdUseCase {
     if (!quote) {
       throw ExceptionCatalog.MARKET_PRICE_NOT_FOUND.doThrow(
         itemId,
-        exceptionPayload().field('itemId').container('path').value(String(itemId)).build(),
+        exceptionPayload()
+          .field('itemId')
+          .container('path')
+          .value(String(itemId))
+          .build(),
       );
     }
 
-    return PricedItemV1Dto.fromEveItem(item, quote.buyPrice, quote.sellPrice, quote.marketHub);
+    return PricedItemV1Dto.fromEveItem(
+      item,
+      quote.buyPrice,
+      quote.sellPrice,
+      quote.marketHub,
+    );
   }
 }

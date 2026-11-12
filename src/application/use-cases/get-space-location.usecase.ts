@@ -12,9 +12,14 @@ import {
 
 @Injectable()
 export class GetSpaceLocationUseCase {
-  constructor(@Inject(LOCATION_CATALOG) private readonly catalog: LocationCatalog) {}
+  constructor(
+    @Inject(LOCATION_CATALOG) private readonly catalog: LocationCatalog,
+  ) {}
 
-  async execute(locationId: number, auth?: LocationAuth | null): Promise<SpaceLocation> {
+  async execute(
+    locationId: number,
+    auth?: LocationAuth | null,
+  ): Promise<SpaceLocation> {
     const location = await this.catalog.searchLocation4Id(locationId, auth);
     if (!location) {
       throw ExceptionCatalog.LOCATION_NOT_FOUND.doThrow(

@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { NeocomBackendError } from 'neocom-domain';
 import { NeocomBackendErrorFilter } from './neocom-backend-error.filter.js';
 
-function mockHost(status: ReturnType<typeof vi.fn>, json: ReturnType<typeof vi.fn>) {
+function mockHost(
+  status: ReturnType<typeof vi.fn>,
+  json: ReturnType<typeof vi.fn>,
+) {
   return {
     switchToHttp: () => ({
       getResponse: () => ({ status, json }),
@@ -57,7 +60,10 @@ describe('NeocomBackendErrorFilter', () => {
   it('defaults EsiError statusCode 0 to 500', () => {
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
-    const error = new EsiNetworkError('connection reset', 'https://esi.evetech.net/u/');
+    const error = new EsiNetworkError(
+      'connection reset',
+      'https://esi.evetech.net/u/',
+    );
 
     filter.catch(error, mockHost(status, json) as never);
 

@@ -5,10 +5,7 @@ import { SpaceLocationV1Dto } from './space-location-v1.dto.js';
  * Location kinds for {@link EveLocationV1Dto}: SpaceLocation set plus planet / ship / cargo hold.
  */
 export type EveLocationIdentifierType =
-  | LocationIdentifierType
-  | 'PLANET'
-  | 'SHIP'
-  | 'CARGO_HOLD';
+  LocationIdentifierType | 'PLANET' | 'SHIP' | 'CARGO_HOLD';
 
 /**
  * Back ↔ front interchange for a multi-kind EVE location (EPIC-012 / ITEM-011 nested hub).

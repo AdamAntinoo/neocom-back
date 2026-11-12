@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { LocationCache } from '@Domain/ports/location-cache.port.js';
-import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
+import {
+  LOCATION_FIXTURE,
+  type SpaceLocation,
+} from '@Domain/spacelocation/space-location.js';
 import { NeocomBackendError } from 'neocom-domain';
 import { EsiLocationResolver } from './esi-location-resolver.js';
 import { EsiRedisLocationCatalog } from './esi-redis-location-catalog.adapter.js';
@@ -25,7 +28,9 @@ const fixtureStation: SpaceLocation = {
 function stubLocationCache(
   seed: SpaceLocation[] = [],
 ): LocationCache & { store: Map<number, SpaceLocation> } {
-  const store = new Map<number, SpaceLocation>(seed.map((l) => [l.locationId, l]));
+  const store = new Map<number, SpaceLocation>(
+    seed.map((l) => [l.locationId, l]),
+  );
   return {
     store,
     isActive: () => true,
@@ -96,12 +101,12 @@ describe('EsiRedisLocationCatalog', () => {
   });
 
   it('throws 401 when structure resolve lacks access cookie (LOC-135)', async () => {
-    const catalog = new EsiRedisLocationCatalog(stubLocationCache()).useResolver(
-      EsiLocationResolver.createDefault(),
-    );
-    await expect(catalog.searchLocation4Id(1_000_000_000_035)).rejects.toBeInstanceOf(
-      NeocomBackendError,
-    );
+    const catalog = new EsiRedisLocationCatalog(
+      stubLocationCache(),
+    ).useResolver(EsiLocationResolver.createDefault());
+    await expect(
+      catalog.searchLocation4Id(1_000_000_000_035),
+    ).rejects.toBeInstanceOf(NeocomBackendError);
     try {
       await catalog.searchLocation4Id(1_000_000_000_035);
     } catch (err) {

@@ -28,7 +28,11 @@ import { GetPricedItemByIdUseCase } from './get-priced-item-by-id.usecase.js';
 import { GetEveItemByIdUseCase } from './get-eve-item-by-id.usecase.js';
 import { GetSpaceLocationUseCase } from './get-space-location.usecase.js';
 
-const LOCATION_EMBED_SKIP = new Set(['LOCATION_NOT_FOUND', 'FORBIDDEN', 'UNAUTHORIZED']);
+const LOCATION_EMBED_SKIP = new Set([
+  'LOCATION_NOT_FOUND',
+  'FORBIDDEN',
+  'UNAUTHORIZED',
+]);
 const log = LayerLogger.for('application', 'GetPilotAssetsUseCase');
 
 /**
@@ -45,7 +49,10 @@ export class GetPilotAssetsUseCase {
     private readonly getSpaceLocation: GetSpaceLocationUseCase,
   ) {}
 
-  async execute(pilotId: number, auth: AccessCookieValue | null): Promise<PilotAssetNode[]> {
+  async execute(
+    pilotId: number,
+    auth: AccessCookieValue | null,
+  ): Promise<PilotAssetNode[]> {
     this.requireAuth(pilotId, auth);
     const cached = await this.cache.get(pilotId);
     if (cached) {
@@ -75,7 +82,11 @@ export class GetPilotAssetsUseCase {
     if (auth == null) {
       throw ExceptionCatalog.ASSETS_AUTH_REQUIRED.doThrow(
         pilotId,
-        exceptionPayload().field('cookie').container('header').value(String(pilotId)).build(),
+        exceptionPayload()
+          .field('cookie')
+          .container('header')
+          .value(String(pilotId))
+          .build(),
       );
     }
   }
@@ -96,12 +107,17 @@ export class GetPilotAssetsUseCase {
 
     const placeIds = [
       ...new Set(
-        instances.filter((i) => i.locationType !== 'item').map((i) => i.locationId),
+        instances
+          .filter((i) => i.locationType !== 'item')
+          .map((i) => i.locationId),
       ),
     ];
     await Promise.all(
       placeIds.map(async (locationId) => {
-        locationById.set(locationId, await this.resolveLocation(locationId, auth));
+        locationById.set(
+          locationId,
+          await this.resolveLocation(locationId, auth),
+        );
       }),
     );
 
@@ -114,7 +130,9 @@ export class GetPilotAssetsUseCase {
         locationType: row.locationType,
         locationFlag: row.locationFlag,
         isSingleton: row.isSingleton,
-        ...(row.isBlueprintCopy !== undefined ? { isBlueprintCopy: row.isBlueprintCopy } : {}),
+        ...(row.isBlueprintCopy !== undefined
+          ? { isBlueprintCopy: row.isBlueprintCopy }
+          : {}),
         ...(row.name !== undefined ? { name: row.name } : {}),
         ownerPilotId: row.ownerPilotId,
         item: pricedByType.get(row.typeId)!,
@@ -153,7 +171,12 @@ export class GetPilotAssetsUseCase {
         error.errors.some((e) => e.code === 'MARKET_PRICE_NOT_FOUND')
       ) {
         const item = await this.getEveItemById.execute(typeId);
-        return PricedItemV1Dto.fromEveItem(item, 0, 0, JitaMarketHubPriceAdapter.jitaHub());
+        return PricedItemV1Dto.fromEveItem(
+          item,
+          0,
+          0,
+          JitaMarketHubPriceAdapter.jitaHub(),
+        );
       }
       throw error;
     }

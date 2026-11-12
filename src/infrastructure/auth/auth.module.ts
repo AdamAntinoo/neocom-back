@@ -1,9 +1,17 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { V1AuthController } from '@Inbound/auth/v1-auth.controller.js';
 import { AuthService } from '@Infra/adapters/services/auth.service.js';
 import { AccessCookieMiddleware } from './access-cookie.middleware.js';
-import { createEsiTokenManager, ESI_TOKEN_MANAGER } from './esi-token-manager.provider.js';
+import {
+  createEsiTokenManager,
+  ESI_TOKEN_MANAGER,
+} from './esi-token-manager.provider.js';
 
 @Module({
   controllers: [V1AuthController],
@@ -20,6 +28,8 @@ import { createEsiTokenManager, ESI_TOKEN_MANAGER } from './esi-token-manager.pr
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AccessCookieMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
+    consumer
+      .apply(AccessCookieMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }

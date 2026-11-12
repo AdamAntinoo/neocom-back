@@ -34,7 +34,10 @@ export class RedisPilotAssetCache implements PilotAssetCache, OnModuleDestroy {
       return;
     }
     try {
-      this.client = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
+      this.client = new Redis(redisUrl, {
+        maxRetriesPerRequest: null,
+        lazyConnect: true,
+      });
       void this.connect().catch((err: unknown) => {
         log.warn(`Pilot-asset Redis connect failed: ${String(err)}`);
         this.active = false;
@@ -98,7 +101,11 @@ export class RedisPilotAssetCache implements PilotAssetCache, OnModuleDestroy {
         'EX',
         PILOT_ASSET_CACHE_TTL_SECONDS,
       );
-      log.debug('dto.cached', { pilotId, count: assets.length, ttlSeconds: PILOT_ASSET_CACHE_TTL_SECONDS });
+      log.debug('dto.cached', {
+        pilotId,
+        count: assets.length,
+        ttlSeconds: PILOT_ASSET_CACHE_TTL_SECONDS,
+      });
     } catch (err) {
       log.warn(`Pilot-asset Redis set failed: ${String(err)}`);
     }
@@ -127,20 +134,29 @@ function reviveAssetNode(raw: unknown): PilotAssetNode {
     ? new PricedItemV1Dto({
         ...row.item,
         marketHub: row.item.marketHub
-          ? new EveLocationV1Dto(row.item.marketHub as Partial<EveLocationV1Dto>)
+          ? new EveLocationV1Dto(
+              row.item.marketHub as Partial<EveLocationV1Dto>,
+            )
           : new EveLocationV1Dto({}),
       })
     : new PricedItemV1Dto({ marketHub: new EveLocationV1Dto({}) });
-  const location = row.location ? new EveLocationV1Dto(row.location) : undefined;
+  const location = row.location
+    ? new EveLocationV1Dto(row.location)
+    : undefined;
   const base = {
     ...row,
     item,
     ...(location ? { location } : {}),
   };
-  if (row.jsonClass === 'LocatedAssetContainerV1Dto' || Array.isArray(row.contents)) {
+  if (
+    row.jsonClass === 'LocatedAssetContainerV1Dto' ||
+    Array.isArray(row.contents)
+  ) {
     return new LocatedAssetContainerV1Dto({
       ...base,
-      contents: Array.isArray(row.contents) ? row.contents.map((c) => reviveAssetNode(c)) : [],
+      contents: Array.isArray(row.contents)
+        ? row.contents.map((c) => reviveAssetNode(c))
+        : [],
     });
   }
   return new EveAssetV1Dto(base);

@@ -31,7 +31,10 @@ export class GetPilotUseCase {
    * Authenticated callers receive {@link PilotV2}; others receive {@link PublicPilotV1}
    * (private fields omitted — domain model, not a generated DTO).
    */
-  async execute(pilotId: number, loggedIn: boolean): Promise<PublicPilotV1 | PilotV2> {
+  async execute(
+    pilotId: number,
+    loggedIn: boolean,
+  ): Promise<PublicPilotV1 | PilotV2> {
     const pilot = await this.pilots.findById(pilotId);
     if (loggedIn) {
       return pilot;

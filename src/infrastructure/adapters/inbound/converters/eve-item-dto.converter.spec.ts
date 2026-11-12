@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { LOCATION_FIXTURE, type SpaceLocation } from '@Domain/spacelocation/space-location.js';
+import {
+  LOCATION_FIXTURE,
+  type SpaceLocation,
+} from '@Domain/spacelocation/space-location.js';
 import { EveItemDtoConverter } from './eve-item-dto.converter.js';
 
 const tritaniumType = {
@@ -112,7 +115,10 @@ describe('EveItemDtoConverter', () => {
 
   it('omits iconUrl when ESI type has no icon_id', () => {
     const { icon_id: _omit, ...noIcon } = tritaniumType;
-    const dto = EveItemDtoConverter.fromEsiType(noIcon, { name: 'Mineral', category_id: 4 });
+    const dto = EveItemDtoConverter.fromEsiType(noIcon, {
+      name: 'Mineral',
+      category_id: 4,
+    });
     expect(dto.iconId).toBeUndefined();
     expect(dto.iconUrl).toBeUndefined();
   });

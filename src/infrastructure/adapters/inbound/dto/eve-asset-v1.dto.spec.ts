@@ -23,7 +23,10 @@ describe('EveAssetV1Dto', () => {
       isSingleton: false,
       ownerPilotId: 42,
       item,
-      location: new EveLocationV1Dto({ locationId: 60003760, locationType: 'STATION' }),
+      location: new EveLocationV1Dto({
+        locationId: 60003760,
+        locationType: 'STATION',
+      }),
     });
     expect(dto).toBeInstanceOf(Record);
     expect(dto.jsonClass).toBe('EveAssetV1Dto');
