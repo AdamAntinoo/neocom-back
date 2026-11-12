@@ -15,7 +15,7 @@ SonarCloud project settings remain the source of truth for numeric thresholds (n
 | Command | Setup |
 | --- | --- |
 | `test:tdd` / `test:coverage` | Node via `nvm use` (alias `neocom`); `npm ci` once |
-| `test:e2e` | Same Node; Nest boots in-process (Vitest). No live ESI; ports overridden in specs |
+| `test:e2e` | Same Node; Nest boots in-process (Vitest). CI starts Redis `:6004` + Postgres `:6003` (compose ports / `.env.async`). No live ESI; ports overridden in specs |
 | `test:bdd` / `test:sdd` | Stubs until Cucumber/OpenAPI Gherkin land |
 | `test:all` | Runs tdd → bdd → sdd in sequence |
 | CI Node pin | Caller workflow `node-version: 24.21.0` (`.nvmrc` alias is not downloadable on Actions) |
